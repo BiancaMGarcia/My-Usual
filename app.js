@@ -199,7 +199,10 @@ function renderRestaurantSheet() {
 }
 
 async function copyOrder(item) {
-  const text = item.name;
+  await copyDishName(item.name);
+}
+
+async function copyDishName(text) {
 
   try {
     await navigator.clipboard.writeText(text);
@@ -344,6 +347,7 @@ function renderTopPicks(picks){
         <strong>${foodEmoji(pick.name)} ${safeUrl(pick.itemUrl||pick.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(pick.itemUrl||pick.item_url))}" target="_blank" rel="noopener">${escapeHtml(pick.name||"Menu pick")} ↗</a>` : escapeHtml(pick.name||"Menu pick")}</strong>
         ${pick.description?`<p class="pick-description">${escapeHtml(pick.description)}</p>`:""}
         <p>${escapeHtml(pick.reason||"A strong match for your taste profile.")}</p>
+        <div class="top-pick-utility"><button type="button" class="small-btn" data-copy-pick-index="${index}">📋 Copy order</button>${safeUrl(pick.itemUrl||pick.item_url)?`<a class="small-btn item-link-btn" href="${escapeHtml(safeUrl(pick.itemUrl||pick.item_url))}" target="_blank" rel="noopener">🔗 View item ↗</a>`:""}</div>
         ${savedNames.has((pick.name||"").toLowerCase())?`<span class="top-pick-saved">✓ Saved</span>`:""}
       </div>
     </li>`).join("");
@@ -487,6 +491,12 @@ document.addEventListener("click", async e => {
     const r = data.find(x => x.id === selectedRestaurantId);
     const item = r?.items.find(x => x.id === copyBtn.dataset.copyItem);
     if (item) copyOrder(item);
+  }
+
+  const copyPickBtn = e.target.closest("[data-copy-pick-index]");
+  if (copyPickBtn) {
+    const pick = currentTopPicks[Number(copyPickBtn.dataset.copyPickIndex)];
+    if (pick?.name) copyDishName(pick.name);
   }
 
   const editItem = e.target.closest("[data-edit-item]");
@@ -776,13 +786,18 @@ function ratingStars(value) {
 function foodEmoji(name = "", category = "") {
   const text = `${name} ${category}`.toLowerCase();
   const choices = [
+    [/boba|bubble tea|milk tea|tapioca/, "🧋"], [/coffee|espresso|cappuccino|latte|cafe|café/, "☕"],
+    [/bakery|croissant|pastry|bread/, "🥐"], [/smoothie|juice|açaí|acai/, "🥤"],
     [/shrimp|prawn/, "🍤"], [/calamari|squid|seafood|fish/, "🐟"], [/sushi|sashimi|poke/, "🍣"],
     [/ramen|noodle|udon|pho|pasta|spaghetti/, "🍜"], [/dumpling|bao|gyoza|wonton/, "🥟"],
     [/pizza/, "🍕"], [/burger|sandwich/, "🍔"], [/taco|burrito|mexican/, "🌮"],
     [/soup|stew/, "🥣"], [/rice|fried rice/, "🍚"], [/chicken|wing/, "🍗"],
     [/beef|steak/, "🥩"], [/pork|bacon/, "🥓"], [/salad|vegetable|vegan/, "🥗"],
-    [/coffee|cafe/, "☕"], [/cake|dessert|bakery|sweet/, "🍰"], [/ice cream|gelato/, "🍨"],
-    [/breakfast|brunch|egg/, "🍳"], [/asian|chinese|taiwanese/, "🥢"], [/italian/, "🇮🇹"]
+    [/cake|dessert|sweet|cupcake/, "🍰"], [/ice cream|gelato|frozen yogurt/, "🍨"],
+    [/barbecue|bbq|grill/, "🍖"], [/hot pot|shabu/, "🍲"], [/indian|curry|thai/, "🍛"],
+    [/korean/, "🍲"], [/japanese/, "🍣"], [/filipino/, "🍚"], [/vietnamese/, "🍜"],
+    [/bar|cocktail|brewery|wine/, "🍹"], [/breakfast|brunch|egg/, "🍳"],
+    [/asian|chinese|taiwanese/, "🥢"], [/italian/, "🍝"]
   ];
   return choices.find(([pattern]) => pattern.test(text))?.[1] || "🍽️";
 }

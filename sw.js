@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v16-isolated-picks";
-const ASSETS = ["./", "./index.html", "./styles.css?v=16", "./app.js?v=16", "./manifest.webmanifest?v=16", "./icon-192.png?v=16", "./icon-512.png?v=16"];
+const CACHE = "my-usual-v18-specific-emojis";
+const ASSETS = ["./", "./index.html", "./styles.css?v=18", "./app.js?v=18", "./manifest.webmanifest?v=18", "./icon-192.png?v=18", "./icon-512.png?v=18"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
