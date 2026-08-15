@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fff7f1" />
+  <title>My Usual</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">What should I order?</p>
+        <h1>My Usual</h1>
+      </div>
+      <button id="editModeBtn" class="icon-btn" aria-label="Toggle edit mode">✏️</button>
+    </header>
+
+    <main>
+      <section class="search-wrap">
+        <span>🔎</span>
+        <input id="searchInput" type="search" placeholder="Search restaurants or food" autocomplete="off" />
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Categories</h2>
+        </div>
+        <div id="categoryChips" class="chips"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>⭐ Favorites</h2>
+        </div>
+        <div id="favoritesList" class="card-list"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>All restaurants</h2>
+          <button id="addRestaurantBtn" class="text-btn hidden">+ Add</button>
+        </div>
+        <div id="restaurantList" class="card-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="restaurantDialog" class="sheet">
+    <div class="sheet-inner">
+      <div class="sheet-head">
+        <button id="closeRestaurantBtn" class="icon-btn">←</button>
+        <div>
+          <p id="restaurantCategory" class="eyebrow"></p>
+          <h2 id="restaurantName"></h2>
+        </div>
+        <button id="favoriteBtn" class="icon-btn" aria-label="Favorite restaurant">♡</button>
+      </div>
+
+      <button id="pickForMeBtn" class="primary-btn">🎲 Pick for me</button>
+
+      <div class="section-head">
+        <h3>My usual orders</h3>
+        <button id="addItemBtn" class="text-btn hidden">+ Add item</button>
+      </div>
+      <div id="orderList" class="order-list"></div>
+    </div>
+  </dialog>
+
+  <dialog id="editRestaurantDialog" class="form-dialog">
+    <form id="restaurantForm" method="dialog">
+      <h2 id="restaurantFormTitle">Add restaurant</h2>
+      <label>
+        Restaurant name
+        <input id="restaurantNameInput" required />
+      </label>
+      <label>
+        Category
+        <input id="restaurantCategoryInput" placeholder="Asian, Coffee, Pizza..." required />
+      </label>
+      <label>
+        Location <span class="muted">(optional)</span>
+        <input id="restaurantLocationInput" placeholder="Valley Fair" />
+      </label>
+      <label class="check-row">
+        <input id="restaurantFavoriteInput" type="checkbox" />
+        Favorite
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="cancelRestaurantForm" class="secondary-btn">Cancel</button>
+        <button type="submit" class="primary-btn">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="editItemDialog" class="form-dialog">
+    <form id="itemForm" method="dialog">
+      <h2 id="itemFormTitle">Add order</h2>
+      <label>
+        Item name
+        <input id="itemNameInput" required />
+      </label>
+      <label>
+        Customizations / notes
+        <textarea id="itemNotesInput" rows="3" placeholder="No onions, sauce on the side"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="cancelItemForm" class="secondary-btn">Cancel</button>
+        <button type="submit" class="primary-btn">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
