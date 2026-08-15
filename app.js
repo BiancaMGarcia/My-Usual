@@ -39,13 +39,13 @@ function renderAccountButton(){
   const button=$("editModeBtn");if(!button)return;
   if(!currentUser){button.innerHTML="🔐";button.setAttribute("aria-label","Sign in");return;}
   const avatar=AVATARS.find(item=>item.id===currentAvatarId)||AVATARS[0];
-  button.innerHTML=`<img class="account-avatar" src="${avatar.src}?v=29" alt="" />`;
+  button.innerHTML=`<img class="account-avatar" src="${avatar.src}?v=30" alt="" />`;
   button.setAttribute("aria-label",`Account · ${avatar.name}`);
 }
 
 function renderAvatarPicker(){
   const picker=$("avatarPicker");if(!picker)return;
-  picker.innerHTML=AVATARS.map(avatar=>`<button type="button" class="avatar-option ${avatar.id===currentAvatarId?"selected":""}" data-avatar-id="${avatar.id}" role="radio" aria-checked="${avatar.id===currentAvatarId}" aria-label="${avatar.name}"><img src="${avatar.src}?v=29" alt="" /></button>`).join("");
+  picker.innerHTML=AVATARS.map(avatar=>`<button type="button" class="avatar-option ${avatar.id===currentAvatarId?"selected":""}" data-avatar-id="${avatar.id}" role="radio" aria-checked="${avatar.id===currentAvatarId}" aria-label="${avatar.name}"><img src="${avatar.src}?v=30" alt="" /></button>`).join("");
 }
 
 async function loadUserAvatar(){
@@ -333,7 +333,7 @@ async function findRestaurantDetails(){
     if(!restaurantLookupMatches.length){status.textContent="No confident match found. Try adding a city, ZIP code, or shopping center.";return;}
     if(restaurantLookupMatches.length===1){applyRestaurantLookupMatch(restaurantLookupMatches[0]);return;}
     status.textContent="Did you mean one of these?";
-    suggestions.innerHTML=restaurantLookupMatches.map((match,index)=>`<button type="button" data-restaurant-match="${index}"><strong>${foodEmoji(match.name,match.type)} ${escapeHtml(match.name)}</strong><span>${escapeHtml(match.address||"")}</span><small>${match.menuUrl?"📖 Menu":match.website?"🌐 Restaurant website":"No website"}${match.googleMapsUrl?" · 📍 Google Maps":""}</small></button>`).join("");
+    suggestions.innerHTML=restaurantLookupMatches.map((match,index)=>`<button type="button" class="restaurant-suggestion-card" data-restaurant-match="${index}"><span class="restaurant-suggestion-emoji" aria-hidden="true">${foodEmoji(match.name,match.type)}</span><span class="restaurant-suggestion-copy"><strong>${escapeHtml(match.name)}</strong><span class="restaurant-suggestion-address">📍 ${escapeHtml(match.address||"Address unavailable")}</span><span class="restaurant-suggestion-badges">${match.menuUrl?'<span class="result-badge menu-badge">📖 Menu</span>':match.website?'<span class="result-badge website-badge">🌐 Website</span>':'<span class="result-badge unavailable-badge">No website</span>'}${match.googleMapsUrl?'<span class="result-badge maps-badge">🗺️ Maps</span>':""}</span></span><span class="restaurant-suggestion-arrow" aria-hidden="true">›</span></button>`).join("");
     suggestions.classList.remove("hidden");
   }catch(error){console.error(error);status.textContent=error.message||"Couldn't find restaurant details.";}finally{$("findRestaurantDetailsBtn").disabled=false;}
 }
@@ -1004,7 +1004,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=29"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=30"));
 }
 
 

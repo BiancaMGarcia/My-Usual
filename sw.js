@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v29-avatars-lookup";
-const ASSETS = ["./", "./index.html", "./styles.css?v=29", "./app.js?v=29", "./manifest.webmanifest?v=29", "./icon-192.png?v=29", "./icon-512.png?v=29", "./avatar-husky-blue.png?v=29", "./avatar-brown-peach.png?v=29", "./avatar-samoyed-lavender.png?v=29", "./avatar-white-mint.png?v=29", "./avatar-spitz-pink.png?v=29", "./avatar-shepherd-yellow.png?v=29"];
+const CACHE = "my-usual-v30-clean-search-results";
+const ASSETS = ["./", "./index.html", "./styles.css?v=30", "./app.js?v=30", "./manifest.webmanifest?v=30", "./icon-192.png?v=30", "./icon-512.png?v=30", "./avatar-husky-blue.png?v=30", "./avatar-brown-peach.png?v=30", "./avatar-samoyed-lavender.png?v=30", "./avatar-white-mint.png?v=30", "./avatar-spitz-pink.png?v=30", "./avatar-shepherd-yellow.png?v=30"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
