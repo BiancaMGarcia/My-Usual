@@ -116,6 +116,31 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <dialog id="loginDialog" class="form-dialog">
+    <form id="loginForm">
+      <h2>Admin Login</h2>
+      <p class="login-help">Sign in to add or edit restaurants and saved orders.</p>
+      <label>Email<input id="loginEmail" type="email" autocomplete="email" required /></label>
+      <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <p id="loginError" class="error-text hidden"></p>
+      <div class="dialog-actions">
+        <button type="button" id="cancelLoginBtn" class="secondary-btn">Cancel</button>
+        <button type="submit" class="primary-btn">Sign in</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="adminDialog" class="form-dialog">
+    <div class="admin-panel">
+      <h2>Admin</h2>
+      <p id="adminEmailLabel" class="login-help"></p>
+      <button id="importV1Btn" class="secondary-btn">Import saved V1 data from this device</button>
+      <button id="signOutBtn" class="secondary-btn">Sign out</button>
+      <button id="closeAdminBtn" class="primary-btn">Turn on edit mode</button>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>

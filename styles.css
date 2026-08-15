@@ -77,3 +77,10 @@ textarea { resize: vertical; }
 @media (min-width: 700px) {
   .sheet { margin: auto; border-radius: 28px; height: min(82vh, 760px); }
 }
+
+.login-help { color: var(--muted); line-height: 1.45; margin: -4px 0 4px; }
+.error-text { color: #a33b32; background: #fff0ed; border-radius: 12px; padding: 10px 12px; margin: 0; font-size: .9rem; }
+.admin-panel { padding: 20px; display: grid; gap: 12px; }
+.admin-panel h2 { margin-bottom: 2px; }
+.admin-panel button { width: 100%; }
+.loading { opacity: .65; pointer-events: none; }

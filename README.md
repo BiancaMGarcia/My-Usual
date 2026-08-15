@@ -1,20 +1,10 @@
-# My Usual
+# My Usual V2 — Supabase Sync
 
-A mobile-first web app for saving the restaurant orders someone usually gets.
+This version uses Supabase as the shared database.
 
-## Included
-- Restaurant + dish search
-- Categories
-- Favorites
-- Saved orders and customizations
-- One-tap copy
-- Pick for Me
-- Add/edit restaurants and orders
-- Local browser storage
-- Installable PWA manifest + home screen icons
+- Public users can browse, search, pick, and copy orders without logging in.
+- The admin signs in with the Supabase account created for My Usual.
+- Only users listed in `public.admin_users` can add, edit, or delete.
+- Admin can optionally import the old V1 localStorage data from the current device.
 
-## Run
-Open index.html directly for a quick local preview, or deploy the folder to GitHub Pages / Netlify / Vercel.
-
-## Supabase
-This version intentionally uses localStorage so it works immediately. The UI/data model is ready to swap to Supabase for shared live updates across devices.
+Deploy by replacing the existing GitHub Pages repo files with the contents of this folder.
