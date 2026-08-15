@@ -141,7 +141,7 @@
           Restaurant or cuisine <span class="muted">(optional)</span>
           <div class="search-wrap discover-search"><span>🔎</span><input id="restaurantSearchInput" type="search" placeholder="Din Tai Fung, sushi, brunch…" autocomplete="off" /></div>
         </label>
-        <label>ZIP code<input id="restaurantZipInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="94080" /></label>
+        <label>ZIP code<input id="restaurantZipInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="ZIP" /></label>
       </div>
       <div class="suggestion-block">
         <strong>Suggested near you</strong>
@@ -271,6 +271,14 @@
       <button id="closeAccountBtn" class="primary-btn">Done</button>
     </div>
   </dialog>
+
+  <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true">
+    <div class="loading-card">
+      <img src="icon-192.png" alt="" />
+      <div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p id="loadingMessage">Just a moment…</p>
+    </div>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 

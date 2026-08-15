@@ -20,6 +20,7 @@ let authMode = "signup";
 let discoveredRestaurants = [];
 let selectedDiscoveredRestaurant = null;
 let topPicksRequestId = 0;
+let loadingCount = 0;
 const $ = id => document.getElementById(id);
 
 function showToast(message) {
@@ -30,8 +31,12 @@ function showToast(message) {
   showToast.timer = setTimeout(() => toast.classList.remove("show"), 1800);
 }
 
-function setLoading(on) {
-  document.body.classList.toggle("loading", on);
+function setLoading(on, message = "Just a moment…") {
+  loadingCount = Math.max(0, loadingCount + (on ? 1 : -1));
+  if (on && $("loadingMessage")) $("loadingMessage").textContent = message;
+  const active = loadingCount > 0;
+  document.body.classList.toggle("loading", active);
+  $("loadingOverlay")?.setAttribute("aria-hidden", String(!active));
 }
 
 async function init() {
@@ -55,7 +60,7 @@ async function refreshAdminStatus() {
 }
 
 async function loadData() {
-  setLoading(true);
+  setLoading(true, "Loading your usuals…");
   const { data: restaurants, error: rError } = await sb.from("restaurants")
     .select("*")
     .eq("user_id", currentUser.id)
@@ -234,6 +239,7 @@ async function searchRestaurants(suggestion=""){
   if(!/^\d{5}$/.test(zip)){$("discoverStatus").textContent="Enter a valid 5-digit ZIP code.";$("restaurantZipInput").focus();return;}
   localStorage.setItem(LAST_ZIP_STORAGE_KEY,zip);
   const query=`${suggestion||search||"popular restaurants"} near ${zip}`;
+  setLoading(true,"Finding restaurants near you…");
   $("restaurantSearchBtn").disabled=true;$("restaurantSearchBtn").textContent="Searching…";$("discoverStatus").textContent="Searching restaurants…";$("discoverResults").innerHTML="";
   try{
     const response=await fetch(`${SUPABASE_URL}/functions/v1/search-restaurants`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({query})});
@@ -242,7 +248,7 @@ async function searchRestaurants(suggestion=""){
     discoveredRestaurants=result.restaurants||[];
     $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found near ${zip}`:"No restaurants found in that area. Try another search.";
     $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>`<button class="discover-result" data-discovered-index="${index}"><strong>${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(r.type||"Restaurant")}</div><div class="meta">${escapeHtml(r.address||"")}</div></button>`).join("");
-  }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
+  }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";}finally{setLoading(false);$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
 }
 function openDiscoveredRestaurant(index){
   selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
@@ -264,6 +270,11 @@ function resetTopPicks(){
 function showTopPicksMessage(message, action=""){
   $("topPicksStatus").innerHTML=`<div class="empty">${escapeHtml(message)}</div>`;
   $("retryTopPicksBtn").classList.toggle("hidden",action!=="retry");
+}
+
+function showTopPicksLoading(){
+  $("topPicksStatus").innerHTML=`<div class="top-picks-loading"><span class="mini-plate">🍽️</span><div><strong>Finding your five picks</strong><div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div></div></div>`;
+  $("retryTopPicksBtn").classList.add("hidden");
 }
 
 function renderTopPicks(picks){
@@ -291,7 +302,7 @@ async function loadTopPicks(){
   }
 
   $("topPicksExplainer").textContent="Personalized using your taste profile and this restaurant’s menu.";
-  showTopPicksMessage("Finding the best dishes for you…");
+  showTopPicksLoading();
 
   try{
     const {data:{session}}=await sb.auth.getSession();
@@ -326,9 +337,12 @@ function extractLocationFromAddress(address=""){const parts=address.split(",").m
 async function saveDiscoveredRestaurant(){
   if(!selectedDiscoveredRestaurant)return;
   if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Sign in to save restaurants.");return;}
-  const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false,user_id:currentUser.id};
-  const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast("Couldn't save restaurant.");return;}
-  await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
+  setLoading(true,"Saving to My Usual…");
+  try{
+    const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false,user_id:currentUser.id};
+    const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast("Couldn't save restaurant.");return;}
+    await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
+  }finally{setLoading(false);}
 }
 
 $("searchInput").addEventListener("input", render);
@@ -659,6 +673,7 @@ function renderOnboardingStep() {
 
 async function loadTasteProfileIntoForm() {
   if (!currentUser) return;
+  setLoading(true, "Loading your taste profile…");
 
   const { data: taste } = await sb
     .from("taste_profile")
@@ -672,10 +687,12 @@ async function loadTasteProfileIntoForm() {
   $("tasteProteins").value = taste?.preferred_proteins || "";
   $("tasteDishes").value = taste?.preferred_dishes || "";
   $("tasteNotes").value = taste?.notes || "";
+  setLoading(false);
 }
 
 async function saveTasteProfileAndFinish() {
   if (!currentUser) return;
+  setLoading(true, "Saving your taste profile…");
 
   const payload = {
     user_id: currentUser.id,
@@ -694,6 +711,7 @@ async function saveTasteProfileAndFinish() {
   if (tasteError) {
     console.error(tasteError);
     showToast("Couldn't save taste profile.");
+    setLoading(false);
     return;
   }
 
@@ -705,10 +723,12 @@ async function saveTasteProfileAndFinish() {
   if (profileError) {
     console.error(profileError);
     showToast("Couldn't finish onboarding.");
+    setLoading(false);
     return;
   }
 
   $("onboardingDialog").close();
+  setLoading(false);
   showToast("Taste profile saved");
 }
 
@@ -745,6 +765,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   $("authForm")?.addEventListener("submit", async e => {
     e.preventDefault();
+    setLoading(true, authMode === "signup" ? "Creating your account…" : "Signing you in…");
 
     const email = $("authEmail").value.trim();
     const password = $("authPassword").value;
@@ -762,12 +783,14 @@ window.addEventListener("DOMContentLoaded", () => {
       if (error) {
         errorBox.textContent = error.message;
         errorBox.classList.remove("hidden");
+        setLoading(false);
         return;
       }
 
       if (!authData.session) {
         errorBox.textContent = "Check your email to confirm your account, then come back and sign in.";
         errorBox.classList.remove("hidden");
+        setLoading(false);
         return;
       }
 
@@ -784,6 +807,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if (error) {
         errorBox.textContent = "That email or password didn't work.";
         errorBox.classList.remove("hidden");
+        setLoading(false);
         return;
       }
 
@@ -795,6 +819,7 @@ window.addEventListener("DOMContentLoaded", () => {
       render();
       await maybeStartOnboarding();
     }
+    setLoading(false);
   });
 
   $("authSwitchBtn")?.addEventListener("click", () => {
