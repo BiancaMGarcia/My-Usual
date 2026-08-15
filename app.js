@@ -20,6 +20,7 @@ let authMode = "signup";
 let discoveredRestaurants = [];
 let selectedDiscoveredRestaurant = null;
 let topPicksRequestId = 0;
+let currentTopPicks = [];
 let loadingCount = 0;
 const $ = id => document.getElementById(id);
 
@@ -87,6 +88,9 @@ async function loadData() {
       id: o.id,
       name: o.name,
       notes: o.notes || "",
+      description: o.description || "",
+      item_url: o.item_url || "",
+      rating: o.rating || null,
       sort_order: o.sort_order || 0
     }))
   }));
@@ -99,7 +103,7 @@ function getCategories() {
 
 function matchesSearch(r, query) {
   if (!query) return true;
-  const haystack = [r.name, r.category, r.location, ...r.items.flatMap(i => [i.name, i.notes])]
+  const haystack = [r.name, r.category, r.location, ...r.items.flatMap(i => [i.name, i.description, i.notes])]
     .join(" ").toLowerCase();
   return haystack.includes(query.toLowerCase());
 }
@@ -136,6 +140,7 @@ function restaurantCard(r) {
         <div>
           <strong>${escapeHtml(r.name)}</strong>
           <div class="meta">${escapeHtml(r.category)}${r.location ? ` · ${escapeHtml(r.location)}` : ""}</div>
+          ${ratingStars(r.rating)}
         </div>
         <span>${r.favorite ? "⭐" : "›"}</span>
       </div>
@@ -153,17 +158,26 @@ function renderRestaurantSheet() {
   const r = data.find(x => x.id === selectedRestaurantId);
   if (!r) return;
 
-  $("restaurantName").textContent = r.name;
+  const website = safeUrl(r.website_url);
+  const maps = safeUrl(r.google_maps_url);
+  $("restaurantName").innerHTML = website ? `<a class="saved-link" href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(r.name)} ↗</a>` : escapeHtml(r.name);
   $("restaurantCategory").textContent = [r.category, r.location].filter(Boolean).join(" · ");
   $("favoriteBtn").textContent = r.favorite ? "⭐" : "♡";
   $("favoriteBtn").disabled = !currentUser;
   $("favoriteBtn").style.opacity = (!currentUser) ? ".45" : "1";
   $("addItemBtn").classList.toggle("hidden", !currentUser);
+  const menuLink = $("savedRestaurantMenuLink");
+  const mapsLink = $("savedRestaurantMapsLink");
+  menuLink.classList.toggle("hidden", !website); if (website) menuLink.href = website;
+  mapsLink.classList.toggle("hidden", !maps); if (maps) mapsLink.href = maps;
+  $("savedRestaurantLinks").classList.toggle("hidden", !website && !maps);
 
   $("orderList").innerHTML = r.items.length ? r.items.map(item => `
     <div class="order-card">
-      <div class="order-title">${escapeHtml(item.name)}</div>
-      <div class="order-notes">${item.notes ? escapeHtml(item.notes) : "No customizations saved."}</div>
+      <div class="order-title">${safeUrl(item.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(item.item_url))}" target="_blank" rel="noopener">${escapeHtml(item.name)} ↗</a>` : escapeHtml(item.name)}</div>
+      ${item.description ? `<div class="order-description">${escapeHtml(item.description)}</div>` : ""}
+      ${item.notes ? `<div class="order-notes">${escapeHtml(item.notes)}</div>` : ""}
+      ${ratingStars(item.rating)}
       <div class="order-actions">
         <button class="copy-btn" data-copy-item="${item.id}">📋 Copy order</button>
         ${editMode && isAdmin ? `
@@ -211,6 +225,9 @@ function openRestaurantForm(id = null) {
   $("restaurantNameInput").value = r?.name ?? "";
   $("restaurantCategoryInput").value = r?.category ?? "";
   $("restaurantLocationInput").value = r?.location ?? "";
+  $("restaurantWebsiteInput").value = r?.website_url ?? "";
+  $("restaurantMapsInput").value = r?.google_maps_url ?? "";
+  $("restaurantRatingInput").value = r?.rating ?? "";
   $("restaurantFavoriteInput").checked = r?.favorite ?? false;
   $("editRestaurantDialog").showModal();
 }
@@ -222,7 +239,10 @@ function openItemForm(id = null) {
   const item = id ? r?.items.find(x => x.id === id) : null;
   $("itemFormTitle").textContent = item ? "Edit order" : "Add order";
   $("itemNameInput").value = item?.name ?? "";
+  $("itemDescriptionInput").value = item?.description ?? "";
+  $("itemUrlInput").value = item?.item_url ?? "";
   $("itemNotesInput").value = item?.notes ?? "";
+  $("itemRatingInput").value = item?.rating ?? "";
   $("editItemDialog").showModal();
 }
 
@@ -235,22 +255,24 @@ function openDiscover(){
   $("discoverDialog").showModal();
   setTimeout(()=>($("restaurantZipInput").value?$("restaurantSearchInput"):$("restaurantZipInput")).focus(),100);
 }
+function showRestaurantSearchLoading(){
+  $("discoverResults").innerHTML=`<div class="restaurant-search-loading"><div class="searching-icon-row"><span>📍</span><span>🍽️</span></div><strong>Looking around the neighborhood</strong><div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div><div class="result-skeletons" aria-hidden="true"><i></i><i></i><i></i></div></div>`;
+}
 async function searchRestaurants(suggestion=""){
   const search=$("restaurantSearchInput").value.trim();
   const zip=$("restaurantZipInput").value.trim();
   if(!/^\d{5}$/.test(zip)){$("discoverStatus").textContent="Enter a valid 5-digit ZIP code.";$("restaurantZipInput").focus();return;}
   localStorage.setItem(LAST_ZIP_STORAGE_KEY,zip);
   const query=`${suggestion||search||"popular restaurants"} near ${zip}`;
-  setLoading(true,"Finding restaurants near you…");
-  $("restaurantSearchBtn").disabled=true;$("restaurantSearchBtn").textContent="Searching…";$("discoverStatus").textContent="Searching restaurants…";$("discoverResults").innerHTML="";
+  $("restaurantSearchBtn").disabled=true;$("restaurantSearchBtn").textContent="Searching…";$("discoverStatus").textContent="Searching restaurants…";showRestaurantSearchLoading();
   try{
     const response=await fetch(`${SUPABASE_URL}/functions/v1/search-restaurants`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({query})});
     const result=await response.json();
-    if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";return;}
+    if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";$("discoverResults").innerHTML="";return;}
     discoveredRestaurants=result.restaurants||[];
     $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found near ${zip}`:"No restaurants found in that area. Try another search.";
     $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>`<button class="discover-result" data-discovered-index="${index}"><strong>${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(r.type||"Restaurant")}</div><div class="meta">${escapeHtml(r.address||"")}</div></button>`).join("");
-  }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";}finally{setLoading(false);$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
+  }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";$("discoverResults").innerHTML="";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
 }
 function openDiscoveredRestaurant(index){
   selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
@@ -264,8 +286,10 @@ function openDiscoveredRestaurant(index){
 }
 
 function resetTopPicks(){
+  currentTopPicks=[];
   $("topPicksList").innerHTML="";
   $("topPicksStatus").innerHTML="";
+  $("topPicksActions").classList.add("hidden");
   $("retryTopPicksBtn").classList.add("hidden");
 }
 
@@ -280,16 +304,53 @@ function showTopPicksLoading(){
 }
 
 function renderTopPicks(picks){
+  currentTopPicks=picks;
   $("topPicksStatus").innerHTML="";
   $("retryTopPicksBtn").classList.add("hidden");
+  const restaurant=data.find(x=>x.name.toLowerCase()===(selectedDiscoveredRestaurant?.name||"").toLowerCase());
+  const savedNames=new Set((restaurant?.items||[]).map(item=>item.name.toLowerCase()));
   $("topPicksList").innerHTML=picks.map((pick,index)=>`
-    <li class="top-pick-item">
-      <span class="top-pick-rank">${Number(pick.rank)||index+1}</span>
-      <div>
-        <strong>${escapeHtml(pick.name||"Menu pick")}</strong>
+    <li class="top-pick-item ${savedNames.has((pick.name||"").toLowerCase())?"is-saved":""}">
+      <label class="top-pick-choice"><input type="checkbox" data-pick-index="${index}" ${savedNames.has((pick.name||"").toLowerCase())?"disabled":"checked"} /><span class="top-pick-rank">${Number(pick.rank)||index+1}</span></label>
+      <div class="top-pick-copy">
+        <strong>${safeUrl(pick.itemUrl||pick.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(pick.itemUrl||pick.item_url))}" target="_blank" rel="noopener">${escapeHtml(pick.name||"Menu pick")} ↗</a>` : escapeHtml(pick.name||"Menu pick")}</strong>
+        ${pick.description?`<p class="pick-description">${escapeHtml(pick.description)}</p>`:""}
         <p>${escapeHtml(pick.reason||"A strong match for your taste profile.")}</p>
+        ${savedNames.has((pick.name||"").toLowerCase())?`<span class="top-pick-saved">✓ Saved</span>`:""}
       </div>
     </li>`).join("");
+  $("topPicksActions").classList.toggle("hidden",picks.every(pick=>savedNames.has((pick.name||"").toLowerCase())));
+}
+
+async function ensureDiscoveredRestaurantSaved(){
+  const r=selectedDiscoveredRestaurant;
+  if(!r||!currentUser)throw new Error("Sign in to save recommendations.");
+  const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
+  if(existing)return existing;
+  const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,website_url:safeUrl(r.website)||null,google_maps_url:safeUrl(r.googleMapsUrl)||null,favorite:false,user_id:currentUser.id};
+  const {data:created,error}=await sb.from("restaurants").insert(payload).select("*").single();
+  if(error)throw error;
+  return {...created,items:[]};
+}
+
+async function saveTopPicks(saveAll=false){
+  if(!currentUser){openAuthDialog("signin");showToast("Sign in to save recommendations.");return;}
+  const indexes=saveAll?currentTopPicks.map((_,index)=>index):[...document.querySelectorAll("[data-pick-index]:checked")].map(input=>Number(input.dataset.pickIndex));
+  const selected=indexes.map(index=>currentTopPicks[index]).filter(Boolean);
+  if(!selected.length){showToast("Choose at least one dish to save.");return;}
+  setLoading(true,selected.length===1?"Saving your pick…":"Saving your picks…");
+  try{
+    const restaurant=await ensureDiscoveredRestaurantSaved();
+    const existingNames=new Set((restaurant.items||[]).map(item=>item.name.toLowerCase()));
+    const newPicks=selected.filter(pick=>!existingNames.has((pick.name||"").toLowerCase()));
+    if(newPicks.length){
+      const {error}=await sb.from("orders").insert(newPicks.map(pick=>({restaurant_id:restaurant.id,name:pick.name,description:pick.description||pick.reason||null,item_url:safeUrl(pick.itemUrl||pick.item_url)||null,notes:pick.reason?`Why it fits you: ${pick.reason}`:null})));
+      if(error)throw error;
+    }
+    await loadData();render();renderTopPicks(currentTopPicks);
+    $("saveDiscoveredRestaurantBtn").textContent="✓ Already in My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;
+    showToast(newPicks.length?`${newPicks.length} pick${newPicks.length===1?"":"s"} saved under ${restaurant.name}`:"Those picks are already saved.");
+  }catch(error){console.error(error);showToast(`Couldn't save picks: ${error.message||"Unknown database error"}`);}finally{setLoading(false);}
 }
 
 async function loadTopPicks(){
@@ -341,8 +402,7 @@ async function saveDiscoveredRestaurant(){
   if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Sign in to save restaurants.");return;}
   setLoading(true,"Saving to My Usual…");
   try{
-    const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false,user_id:currentUser.id};
-    const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast(`Couldn't save: ${error.message||"Unknown database error"}`);return;}
+    await ensureDiscoveredRestaurantSaved();
     await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
   }finally{setLoading(false);}
 }
@@ -357,6 +417,18 @@ $("categoryChips").addEventListener("click", e => {
 });
 
 document.addEventListener("click", async e => {
+  const closeBtn = e.target.closest("[data-close-dialog]");
+  if (closeBtn) $(closeBtn.dataset.closeDialog)?.close();
+
+  const suggestion = e.target.closest("[data-taste-target]");
+  if (suggestion) {
+    const field = $(suggestion.dataset.tasteTarget);
+    const value = suggestion.textContent.trim();
+    const values = field.value.split(",").map(part => part.trim()).filter(Boolean);
+    if (!values.some(part => part.toLowerCase() === value.toLowerCase())) field.value = [...values, value].join(", ");
+    suggestion.classList.add("added");
+  }
+
   const card = e.target.closest("[data-restaurant-id]");
   if (card) openRestaurant(card.dataset.restaurantId);
 
@@ -428,6 +500,9 @@ $("restaurantForm").addEventListener("submit", async e => {
     name: $("restaurantNameInput").value.trim(),
     category: $("restaurantCategoryInput").value.trim(),
     location: $("restaurantLocationInput").value.trim() || null,
+    website_url: safeUrl($("restaurantWebsiteInput").value) || null,
+    google_maps_url: safeUrl($("restaurantMapsInput").value) || null,
+    rating: $("restaurantRatingInput").value ? Number($("restaurantRatingInput").value) : null,
     favorite: $("restaurantFavoriteInput").checked,
     user_id: currentUser.id
   };
@@ -453,15 +528,18 @@ $("itemForm").addEventListener("submit", async e => {
 
   const name = $("itemNameInput").value.trim();
   const notes = $("itemNotesInput").value.trim() || null;
+  const description = $("itemDescriptionInput").value.trim() || null;
+  const item_url = safeUrl($("itemUrlInput").value) || null;
+  const rating = $("itemRatingInput").value ? Number($("itemRatingInput").value) : null;
 
   let error;
   if (editingItemId) {
-    ({ error } = await sb.from("orders").update({ name, notes }).eq("id", editingItemId));
+    ({ error } = await sb.from("orders").update({ name, notes, description, item_url, rating }).eq("id", editingItemId));
   } else {
     ({ error } = await sb.from("orders").insert({
       restaurant_id: selectedRestaurantId,
       name,
-      notes
+      notes, description, item_url, rating
     }));
   }
 
@@ -584,7 +662,7 @@ sb.auth.onAuthStateChange(async (_event, session) => {
 
 $("openDiscoverBtn").addEventListener("click",openDiscover);
 $("closeDiscoverBtn").addEventListener("click",()=>$("discoverDialog").close());
-$("closeDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRestaurantDialog").close();$("discoverDialog").showModal();});
+$("closeDiscoveredRestaurantBtn").addEventListener("click",()=>$("discoveredRestaurantDialog").close());
 $("restaurantSearchBtn").addEventListener("click",()=>searchRestaurants());
 $("restaurantSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
 $("restaurantZipInput").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,5);});
@@ -592,12 +670,27 @@ $("restaurantZipInput").addEventListener("keydown",e=>{if(e.key==="Enter")search
 $("restaurantSuggestionChips").addEventListener("click",e=>{const btn=e.target.closest("[data-suggestion]");if(btn)searchRestaurants(btn.dataset.suggestion);});
 $("discoverResults").addEventListener("click",e=>{const btn=e.target.closest("[data-discovered-index]");if(btn)openDiscoveredRestaurant(Number(btn.dataset.discoveredIndex));});
 $("saveDiscoveredRestaurantBtn").addEventListener("click",saveDiscoveredRestaurant);
+$("saveSelectedPicksBtn").addEventListener("click",()=>saveTopPicks(false));
+$("saveAllPicksBtn").addEventListener("click",()=>saveTopPicks(true));
 $("retryTopPicksBtn").addEventListener("click",loadTopPicks);
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, c => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
   })[c]);
+}
+
+function safeUrl(value = "") {
+  try {
+    const url = new URL(String(value).trim());
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch { return ""; }
+}
+
+function ratingStars(value) {
+  const rating = Math.round(Number(value));
+  if (rating < 1 || rating > 5) return "";
+  return `<div class="rating-stars" aria-label="${rating} out of 5 stars">${"★".repeat(rating)}${"☆".repeat(5-rating)}</div>`;
 }
 
 init();

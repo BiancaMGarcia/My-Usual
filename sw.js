@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v10-live-refresh";
-const ASSETS = ["./", "./index.html", "./styles.css?v=10", "./app.js?v=10", "./manifest.webmanifest?v=10", "./icon-192.png?v=10", "./icon-512.png?v=10"];
+const CACHE = "my-usual-v13-links-ratings";
+const ASSETS = ["./", "./index.html", "./styles.css?v=13", "./app.js?v=13", "./manifest.webmanifest?v=13", "./icon-192.png?v=13", "./icon-512.png?v=13"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=10" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=10" />
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="manifest" href="manifest.webmanifest?v=13" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=13" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=10" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=13" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -67,7 +67,7 @@
   <dialog id="restaurantDialog" class="sheet">
     <div class="sheet-inner">
       <div class="sheet-head">
-        <button id="closeRestaurantBtn" class="icon-btn">←</button>
+        <button id="closeRestaurantBtn" class="icon-btn" aria-label="Close">×</button>
         <div>
           <p id="restaurantCategory" class="eyebrow"></p>
           <h2 id="restaurantName"></h2>
@@ -76,6 +76,10 @@
       </div>
 
       <button id="pickForMeBtn" class="primary-btn">🎲 Pick for me</button>
+      <div id="savedRestaurantLinks" class="external-actions compact-links hidden">
+        <a id="savedRestaurantMenuLink" class="primary-btn link-btn" target="_blank" rel="noopener">View Menu / Website ↗</a>
+        <a id="savedRestaurantMapsLink" class="secondary-btn link-btn" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+      </div>
 
       <div class="section-head">
         <h3>My usual orders</h3>
@@ -87,6 +91,7 @@
 
   <dialog id="editRestaurantDialog" class="form-dialog">
     <form id="restaurantForm" method="dialog">
+      <button type="button" class="dialog-x" data-close-dialog="editRestaurantDialog" aria-label="Close">×</button>
       <h2 id="restaurantFormTitle">Add restaurant</h2>
       <label>
         Restaurant name
@@ -99,6 +104,17 @@
       <label>
         Location <span class="muted">(optional)</span>
         <input id="restaurantLocationInput" placeholder="Valley Fair" />
+      </label>
+      <label>
+        Menu or website link <span class="muted">(optional)</span>
+        <input id="restaurantWebsiteInput" type="url" placeholder="https://restaurant.com/menu" />
+      </label>
+      <label>
+        Google Maps link <span class="muted">(optional)</span>
+        <input id="restaurantMapsInput" type="url" placeholder="https://maps.google.com/..." />
+      </label>
+      <label>Your rating <span class="muted">(optional)</span>
+        <select id="restaurantRatingInput"><option value="">Not rated</option><option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option></select>
       </label>
       <label class="check-row">
         <input id="restaurantFavoriteInput" type="checkbox" />
@@ -113,14 +129,26 @@
 
   <dialog id="editItemDialog" class="form-dialog">
     <form id="itemForm" method="dialog">
+      <button type="button" class="dialog-x" data-close-dialog="editItemDialog" aria-label="Close">×</button>
       <h2 id="itemFormTitle">Add order</h2>
       <label>
         Item name
         <input id="itemNameInput" required />
       </label>
       <label>
+        Item description <span class="muted">(optional)</span>
+        <textarea id="itemDescriptionInput" rows="3" placeholder="What comes in the dish or what it tastes like"></textarea>
+      </label>
+      <label>
+        Item link <span class="muted">(optional)</span>
+        <input id="itemUrlInput" type="url" placeholder="https://restaurant.com/menu/item" />
+      </label>
+      <label>
         Customizations / notes
         <textarea id="itemNotesInput" rows="3" placeholder="No onions, sauce on the side"></textarea>
+      </label>
+      <label>Your rating <span class="muted">(optional)</span>
+        <select id="itemRatingInput"><option value="">Not rated</option><option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option></select>
       </label>
       <div class="dialog-actions">
         <button type="button" id="cancelItemForm" class="secondary-btn">Cancel</button>
@@ -132,7 +160,7 @@
   <dialog id="discoverDialog" class="sheet">
     <div class="sheet-inner">
       <div class="sheet-head">
-        <button id="closeDiscoverBtn" class="icon-btn">←</button>
+        <button id="closeDiscoverBtn" class="icon-btn" aria-label="Close">×</button>
         <div><p class="eyebrow">✨ New restaurant</p><h2>Try Somewhere New</h2></div>
         <div class="spacer-icon"></div>
       </div>
@@ -159,7 +187,7 @@
   <dialog id="discoveredRestaurantDialog" class="sheet">
     <div class="sheet-inner">
       <div class="sheet-head">
-        <button id="closeDiscoveredRestaurantBtn" class="icon-btn">←</button>
+        <button id="closeDiscoveredRestaurantBtn" class="icon-btn" aria-label="Close">×</button>
         <div><p id="discoveredType" class="eyebrow">Restaurant</p><h2 id="discoveredName"></h2></div>
         <div class="spacer-icon"></div>
       </div>
@@ -173,6 +201,10 @@
         <p id="topPicksExplainer" class="top-picks-explainer">Personalized using your taste profile and this restaurant’s menu.</p>
         <div id="topPicksStatus" class="top-picks-status" role="status" aria-live="polite"></div>
         <ol id="topPicksList" class="top-picks-list"></ol>
+        <div id="topPicksActions" class="top-picks-actions hidden">
+          <p>Choose the dishes you want to remember.</p>
+          <div><button id="saveSelectedPicksBtn" class="primary-btn" type="button">Save selected</button><button id="saveAllPicksBtn" class="secondary-btn" type="button">Save all 5</button></div>
+        </div>
         <button id="retryTopPicksBtn" class="secondary-btn full-btn hidden" type="button">Try recommendations again</button>
       </section>
       <button id="saveDiscoveredRestaurantBtn" class="primary-btn full-btn">＋ Save to My Usual</button>
@@ -182,6 +214,7 @@
 
   <dialog id="authDialog" class="form-dialog">
     <form id="authForm">
+      <button type="button" class="dialog-x" data-close-dialog="authDialog" aria-label="Close">×</button>
       <h2 id="authTitle">Welcome to My Usual</h2>
       <p class="login-help">Sign in to keep your own restaurants, usual orders, and taste profile.</p>
 
@@ -210,6 +243,7 @@
 
   <dialog id="onboardingDialog" class="sheet">
     <div class="sheet-inner onboarding-shell">
+      <button type="button" class="dialog-x" data-close-dialog="onboardingDialog" aria-label="Close">×</button>
       <div class="onboarding-progress"><span id="onboardingProgressBar"></span></div>
       <p id="onboardingStepLabel" class="eyebrow">Step 1 of 4</p>
 
@@ -217,12 +251,14 @@
         <h2>What do you usually like?</h2>
         <p class="onboarding-copy">Add foods, flavors, or dishes you’re usually happy to order.</p>
         <textarea id="tasteLikes" rows="5" placeholder="Noodles, dumplings, garlic, beef, fried rice..."></textarea>
+        <div class="taste-suggestions" aria-label="Suggestions"><button type="button" data-taste-target="tasteLikes">Noodles</button><button type="button" data-taste-target="tasteLikes">Dumplings</button><button type="button" data-taste-target="tasteLikes">Garlic</button><button type="button" data-taste-target="tasteLikes">Crispy foods</button><button type="button" data-taste-target="tasteLikes">Comfort food</button></div>
       </section>
 
       <section class="onboarding-step hidden" data-step="2">
         <h2>Anything you avoid?</h2>
         <p class="onboarding-copy">Add ingredients, flavors, or foods you don’t like.</p>
         <textarea id="tasteDislikes" rows="5" placeholder="Cilantro, raw onions, mushrooms..."></textarea>
+        <div class="taste-suggestions" aria-label="Suggestions"><button type="button" data-taste-target="tasteDislikes">Cilantro</button><button type="button" data-taste-target="tasteDislikes">Raw onions</button><button type="button" data-taste-target="tasteDislikes">Mushrooms</button><button type="button" data-taste-target="tasteDislikes">Very sweet</button><button type="button" data-taste-target="tasteDislikes">Seafood</button></div>
       </section>
 
       <section class="onboarding-step hidden" data-step="3">
@@ -241,11 +277,13 @@
         <label>
           Preferred proteins
           <input id="tasteProteins" placeholder="Chicken, beef, pork, shrimp..." />
+          <span class="taste-suggestions"><button type="button" data-taste-target="tasteProteins">Chicken</button><button type="button" data-taste-target="tasteProteins">Beef</button><button type="button" data-taste-target="tasteProteins">Shrimp</button><button type="button" data-taste-target="tasteProteins">Tofu</button></span>
         </label>
 
         <label>
           Favorite dish types
           <input id="tasteDishes" placeholder="Noodle soups, rice dishes, dumplings..." />
+          <span class="taste-suggestions"><button type="button" data-taste-target="tasteDishes">Noodle soups</button><button type="button" data-taste-target="tasteDishes">Rice dishes</button><button type="button" data-taste-target="tasteDishes">Dumplings</button><button type="button" data-taste-target="tasteDishes">Small plates</button></span>
         </label>
       </section>
 
@@ -253,6 +291,7 @@
         <h2>Anything else we should know?</h2>
         <p class="onboarding-copy">This can be as simple as “I like familiar foods” or “I prefer lighter meals.”</p>
         <textarea id="tasteNotes" rows="5" placeholder="Prefers familiar flavors, likes crispy textures..."></textarea>
+        <div class="taste-suggestions" aria-label="Suggestions"><button type="button" data-taste-target="tasteNotes">I like familiar flavors</button><button type="button" data-taste-target="tasteNotes">I prefer lighter meals</button><button type="button" data-taste-target="tasteNotes">I love crispy textures</button><button type="button" data-taste-target="tasteNotes">I like sharing plates</button></div>
       </section>
 
       <div class="onboarding-actions">
@@ -264,6 +303,7 @@
 
   <dialog id="accountDialog" class="form-dialog">
     <div class="admin-panel">
+      <button type="button" class="dialog-x" data-close-dialog="accountDialog" aria-label="Close">×</button>
       <h2>Your Account</h2>
       <p id="accountEmail" class="login-help"></p>
       <button id="editTasteProfileBtn" class="secondary-btn">Edit taste profile</button>
@@ -274,7 +314,7 @@
 
   <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true">
     <div class="loading-card">
-      <img src="icon-192.png?v=10" alt="" />
+      <img src="icon-192.png?v=13" alt="" />
       <div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
       <p id="loadingMessage">Just a moment…</p>
     </div>
@@ -284,6 +324,7 @@
 
   <dialog id="loginDialog" class="form-dialog">
     <form id="loginForm">
+      <button type="button" class="dialog-x" data-close-dialog="loginDialog" aria-label="Close">×</button>
       <h2>Admin Login</h2>
       <p class="login-help">Sign in to add or edit restaurants and saved orders.</p>
       <label>Email<input id="loginEmail" type="email" autocomplete="email" required /></label>
@@ -298,6 +339,7 @@
 
   <dialog id="adminDialog" class="form-dialog">
     <div class="admin-panel">
+      <button type="button" class="dialog-x" data-close-dialog="adminDialog" aria-label="Close">×</button>
       <h2>Admin</h2>
       <p id="adminEmailLabel" class="login-help"></p>
       <button id="importV1Btn" class="secondary-btn">Import saved V1 data from this device</button>
@@ -307,6 +349,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>
