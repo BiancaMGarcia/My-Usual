@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v21-menu-deep-link";
-const ASSETS = ["./", "./index.html", "./styles.css?v=21", "./app.js?v=21", "./manifest.webmanifest?v=21", "./icon-192.png?v=21", "./icon-512.png?v=21"];
+const CACHE = "my-usual-v23-item-lookup";
+const ASSETS = ["./", "./index.html", "./styles.css?v=23", "./app.js?v=23", "./manifest.webmanifest?v=23", "./icon-192.png?v=23", "./icon-512.png?v=23"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

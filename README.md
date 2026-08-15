@@ -1,4 +1,4 @@
-# My Usual v21
+# My Usual v23
 
 My Usual is a pastel pink-and-purple restaurant and order-saving PWA with private user accounts, ZIP-code restaurant discovery, personalized Top 5 menu recommendations, ratings, and a guided taste profile.
 
@@ -20,7 +20,7 @@ In GitHub, open **Settings → Pages**, select **Deploy from a branch**, then ch
 
 ## Required Supabase database update
 
-Before testing v21 saving, run all of `LINKS_RATINGS_MIGRATION.sql` once in the Supabase **SQL Editor**.
+Before testing v23 saving, run all of `LINKS_RATINGS_MIGRATION.sql` once in the Supabase **SQL Editor**.
 
 It adds restaurant website and Maps links, restaurant ratings, item descriptions and links, and item ratings. Without it, saving may fail because the new columns do not exist.
 
@@ -36,7 +36,7 @@ The function requires a Supabase secret named `GEMINI_API_KEY`. It verifies the 
 
 The app's `search-restaurants` Edge Function must already be deployed. Discovery accepts a five-digit ZIP code and searches within the requested area. Users may search by restaurant/cuisine or tap a suggested category.
 
-## v21 features
+## v23 features
 
 - Save all five recommendations or only selected dishes
 - Store saved dishes under their restaurant
@@ -63,7 +63,10 @@ The app's `search-restaurants` Edge Function must already be deployed. Discovery
 - Fall back through grounded search, URL context, direct official-site reading, and strict menu lookup
 - Force a fresh service-worker load so restaurant emoji updates appear immediately
 - Replace homepage links with the discovered menu/order page after menu analysis
+- Rate saved items from a dedicated five-star dialog
+- Find and populate descriptions and links for manually added items
+- Store and display distinct item, menu, restaurant-website, and Maps link types
 
 ## Refreshing after deployment
 
-v21 uses new cache identifiers. After GitHub Pages finishes deploying, refresh the page. If an older version remains visible, close the installed app or browser tab and reopen it. As a last resort, clear the site's stored data or uninstall and reinstall the home-screen app.
+v23 uses new cache identifiers. After GitHub Pages finishes deploying, refresh the page. If an older version remains visible, close the installed app or browser tab and reopen it. As a last resort, clear the site's stored data or uninstall and reinstall the home-screen app.

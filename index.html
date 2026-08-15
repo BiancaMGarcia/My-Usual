@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=21" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=21" />
-  <link rel="stylesheet" href="styles.css?v=21" />
+  <link rel="manifest" href="manifest.webmanifest?v=23" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=23" />
+  <link rel="stylesheet" href="styles.css?v=23" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=21" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=23" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -111,6 +111,9 @@
         Menu or website link <span class="muted">(optional)</span>
         <input id="restaurantWebsiteInput" type="url" placeholder="https://restaurant.com/menu" />
       </label>
+      <label>That link opens
+        <select id="restaurantLinkTypeInput"><option value="menu">The full menu</option><option value="restaurant">The restaurant website</option></select>
+      </label>
       <label>
         Google Maps link <span class="muted">(optional)</span>
         <input id="restaurantMapsInput" type="url" placeholder="https://maps.google.com/..." />
@@ -137,6 +140,8 @@
         Item name
         <input id="itemNameInput" required />
       </label>
+      <button id="findItemDetailsBtn" type="button" class="secondary-btn">✨ Find item details</button>
+      <p id="findItemDetailsStatus" class="form-status hidden" role="status" aria-live="polite"></p>
       <label>
         Item description <span class="muted">(optional)</span>
         <textarea id="itemDescriptionInput" rows="3" placeholder="What comes in the dish or what it tastes like"></textarea>
@@ -144,6 +149,9 @@
       <label>
         Item link <span class="muted">(optional)</span>
         <input id="itemUrlInput" type="url" placeholder="https://restaurant.com/menu/item" />
+      </label>
+      <label>Link opens
+        <select id="itemLinkTypeInput"><option value="item">This specific item</option><option value="menu">The full menu</option><option value="restaurant">The restaurant website</option></select>
       </label>
       <label>
         Customizations / notes
@@ -157,6 +165,18 @@
         <button type="submit" class="primary-btn">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="rateItemDialog" class="form-dialog">
+    <div class="rate-panel">
+      <button type="button" class="dialog-x" data-close-dialog="rateItemDialog" aria-label="Close">×</button>
+      <p class="eyebrow">⭐ Your rating</p>
+      <h2 id="rateItemName">Rate this item</h2>
+      <div id="rateItemStars" class="rate-star-buttons" aria-label="Choose a rating">
+        <button type="button" data-rate-value="1" aria-label="1 star">★</button><button type="button" data-rate-value="2" aria-label="2 stars">★</button><button type="button" data-rate-value="3" aria-label="3 stars">★</button><button type="button" data-rate-value="4" aria-label="4 stars">★</button><button type="button" data-rate-value="5" aria-label="5 stars">★</button>
+      </div>
+      <button id="clearItemRatingBtn" type="button" class="secondary-btn full-btn">Clear rating</button>
+    </div>
   </dialog>
 
   <dialog id="discoverDialog" class="sheet">
@@ -318,7 +338,7 @@
 
   <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true">
     <div class="loading-card">
-      <img src="icon-192.png?v=21" alt="" />
+      <img src="icon-192.png?v=23" alt="" />
       <div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
       <p id="loadingMessage">Just a moment…</p>
     </div>
@@ -353,6 +373,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=23"></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ let selectedRestaurantId = null;
 let editMode = false;
 let editingRestaurantId = null;
 let editingItemId = null;
+let ratingItemId = null;
 let currentUser = null;
 let isAdmin = false;
 let onboardingStep = 1;
@@ -90,6 +91,7 @@ async function loadData() {
       notes: o.notes || "",
       description: o.description || "",
       item_url: o.item_url || "",
+      item_link_type: o.item_link_type || "",
       rating: o.rating || null,
       favorite: !!o.favorite,
       sort_order: o.sort_order || 0
@@ -174,17 +176,20 @@ function renderRestaurantSheet() {
   const menuLink = $("savedRestaurantMenuLink");
   const mapsLink = $("savedRestaurantMapsLink");
   menuLink.classList.toggle("hidden", !website); if (website) menuLink.href = website;
+  menuLink.textContent = r.website_link_type === "menu" ? "📖 View full menu ↗" : "🌐 Restaurant website ↗";
   mapsLink.classList.toggle("hidden", !maps); if (maps) mapsLink.href = maps;
   $("savedRestaurantLinks").classList.toggle("hidden", !website && !maps);
 
   $("orderList").innerHTML = r.items.length ? r.items.map(item => `
     <div class="order-card ${item.favorite ? "favorite-item" : ""}">
-      <div class="order-title">${foodEmoji(item.name)} ${safeUrl(item.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(item.item_url))}" target="_blank" rel="noopener">${escapeHtml(item.name)} ↗</a>` : escapeHtml(item.name)}</div>
+      <div class="order-title">${foodEmoji(item.name)} ${escapeHtml(item.name)}</div>
       ${item.description ? `<div class="order-description">${escapeHtml(item.description)}</div>` : ""}
       ${item.notes ? `<div class="order-notes">${escapeHtml(item.notes)}</div>` : ""}
       ${ratingStars(item.rating)}
+      ${safeUrl(item.item_url)?`<a class="small-btn saved-item-link" href="${escapeHtml(safeUrl(item.item_url))}" target="_blank" rel="noopener">${itemLinkLabel(item.item_link_type)} ↗</a>`:""}
       <div class="order-actions">
         ${currentUser ? `<button class="small-btn favorite-item-btn" data-favorite-item="${item.id}">${item.favorite ? "⭐ Favorited" : "☆ Favorite"}</button>` : ""}
+        ${currentUser ? `<button class="small-btn rate-item-btn" data-rate-item="${item.id}">⭐ Rate</button>` : ""}
         <button class="copy-btn" data-copy-item="${item.id}">📋 Copy order</button>
         ${currentUser ? `
           <button class="small-btn" data-edit-item="${item.id}">Edit</button>
@@ -246,6 +251,7 @@ function openRestaurantForm(id = null) {
   $("restaurantCategoryInput").value = r?.category ?? "";
   $("restaurantLocationInput").value = r?.location ?? "";
   $("restaurantWebsiteInput").value = r?.website_url ?? "";
+  $("restaurantLinkTypeInput").value = r?.website_link_type || "restaurant";
   $("restaurantMapsInput").value = r?.google_maps_url ?? "";
   $("restaurantRatingInput").value = r?.rating ?? "";
   $("restaurantFavoriteInput").checked = r?.favorite ?? false;
@@ -261,6 +267,9 @@ function openItemForm(id = null) {
   $("itemNameInput").value = item?.name ?? "";
   $("itemDescriptionInput").value = item?.description ?? "";
   $("itemUrlInput").value = item?.item_url ?? "";
+  $("itemLinkTypeInput").value = item?.item_link_type || "item";
+  $("findItemDetailsStatus").classList.add("hidden");
+  $("findItemDetailsStatus").textContent = "";
   $("itemNotesInput").value = item?.notes ?? "";
   $("itemRatingInput").value = item?.rating ?? "";
   $("editItemDialog").showModal();
@@ -381,7 +390,7 @@ async function ensureDiscoveredRestaurantSaved(){
   if(!r||!currentUser)throw new Error("Sign in to save recommendations.");
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
   if(existing)return existing;
-  const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,website_url:safeUrl(r.menuUrl||r.website)||null,google_maps_url:safeUrl(r.googleMapsUrl)||null,favorite:false,user_id:currentUser.id};
+  const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,website_url:safeUrl(r.menuUrl||r.website)||null,website_link_type:r.menuUrl?"menu":"restaurant",google_maps_url:safeUrl(r.googleMapsUrl)||null,favorite:false,user_id:currentUser.id};
   const {data:created,error}=await sb.from("restaurants").insert(payload).select("*").single();
   if(error)throw error;
   return {...created,items:[]};
@@ -398,7 +407,7 @@ async function saveTopPicks(saveAll=false){
     const existingNames=new Set((restaurant.items||[]).map(item=>item.name.toLowerCase()));
     const newPicks=selected.filter(pick=>!existingNames.has((pick.name||"").toLowerCase()));
     if(newPicks.length){
-      const {error}=await sb.from("orders").insert(newPicks.map(pick=>({restaurant_id:restaurant.id,name:pick.name,description:pick.description||pick.reason||null,item_url:safeUrl(pick.itemUrl||pick.item_url)||null,notes:pick.reason?`Why it fits you: ${pick.reason}`:null})));
+      const {error}=await sb.from("orders").insert(newPicks.map(pick=>({restaurant_id:restaurant.id,name:pick.name,description:pick.description||pick.reason||null,item_url:safeUrl(pick.itemUrl||pick.item_url)||null,item_link_type:safeUrl(pick.itemUrl||pick.item_url)?"item":null,notes:pick.reason?`Why it fits you: ${pick.reason}`:null})));
       if(error)throw error;
     }
     await loadData();render();renderTopPicks(currentTopPicks);
@@ -528,6 +537,17 @@ document.addEventListener("click", async e => {
     showToast(item.favorite ? "Removed from favorites" : "Item favorited ⭐");
   }
 
+  const rateItem = e.target.closest("[data-rate-item]");
+  if (rateItem && currentUser) {
+    const restaurant = data.find(x => x.id === selectedRestaurantId);
+    const item = restaurant?.items.find(x => x.id === rateItem.dataset.rateItem);
+    if (!item) return;
+    ratingItemId = item.id;
+    $("rateItemName").textContent = `${foodEmoji(item.name)} ${item.name}`;
+    renderRateButtons(item.rating);
+    $("rateItemDialog").showModal();
+  }
+
   if (e.target.id === "editRestaurantInside") openRestaurantForm(selectedRestaurantId);
 });
 
@@ -593,6 +613,7 @@ $("restaurantForm").addEventListener("submit", async e => {
     category: $("restaurantCategoryInput").value.trim(),
     location: $("restaurantLocationInput").value.trim() || null,
     website_url: safeUrl($("restaurantWebsiteInput").value) || null,
+    website_link_type: safeUrl($("restaurantWebsiteInput").value) ? $("restaurantLinkTypeInput").value : null,
     google_maps_url: safeUrl($("restaurantMapsInput").value) || null,
     rating: $("restaurantRatingInput").value ? Number($("restaurantRatingInput").value) : null,
     favorite: $("restaurantFavoriteInput").checked,
@@ -622,16 +643,17 @@ $("itemForm").addEventListener("submit", async e => {
   const notes = $("itemNotesInput").value.trim() || null;
   const description = $("itemDescriptionInput").value.trim() || null;
   const item_url = safeUrl($("itemUrlInput").value) || null;
+  const item_link_type = item_url ? $("itemLinkTypeInput").value : null;
   const rating = $("itemRatingInput").value ? Number($("itemRatingInput").value) : null;
 
   let error;
   if (editingItemId) {
-    ({ error } = await sb.from("orders").update({ name, notes, description, item_url, rating }).eq("id", editingItemId));
+    ({ error } = await sb.from("orders").update({ name, notes, description, item_url, item_link_type, rating }).eq("id", editingItemId));
   } else {
     ({ error } = await sb.from("orders").insert({
       restaurant_id: selectedRestaurantId,
       name,
-      notes, description, item_url, rating
+      notes, description, item_url, item_link_type, rating
     }));
   }
 
@@ -645,6 +667,50 @@ $("itemForm").addEventListener("submit", async e => {
 
 $("cancelRestaurantForm").addEventListener("click", () => $("editRestaurantDialog").close());
 $("cancelItemForm").addEventListener("click", () => $("editItemDialog").close());
+
+$("findItemDetailsBtn").addEventListener("click", async () => {
+  const restaurant=data.find(x=>x.id===selectedRestaurantId);
+  const itemName=$("itemNameInput").value.trim();
+  const status=$("findItemDetailsStatus");
+  if(!restaurant)return showToast("Choose a restaurant first.");
+  if(!itemName){status.textContent="Enter the item name first.";status.classList.remove("hidden");$("itemNameInput").focus();return;}
+  const button=$("findItemDetailsBtn");button.disabled=true;button.textContent="✨ Looking through the menu…";
+  status.textContent="Searching for this item and the best available link…";status.classList.remove("hidden");
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-item`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${session?.access_token||SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName:restaurant.name,restaurantLocation:restaurant.location||"",website:restaurant.website_url||"",websiteLinkType:restaurant.website_link_type||"restaurant",itemName})});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||"Item lookup failed.");
+    if(result.description)$("itemDescriptionInput").value=result.description;
+    if(safeUrl(result.url)){$("itemUrlInput").value=safeUrl(result.url);$("itemLinkTypeInput").value=["item","menu","restaurant"].includes(result.linkType)?result.linkType:"restaurant";}
+    const label=result.linkType==="item"?"direct item link":result.linkType==="menu"?"full menu link":"restaurant website";
+    status.textContent=`✓ Details found${result.url?` with a ${label}`:""}. Review before saving.`;
+  }catch(error){console.error(error);status.textContent=error.message||"Couldn't find item details.";}
+  finally{button.disabled=false;button.textContent="✨ Find item details";}
+});
+
+function renderRateButtons(value) {
+  const rating = Number(value) || 0;
+  document.querySelectorAll("[data-rate-value]").forEach(button => {
+    button.classList.toggle("active", Number(button.dataset.rateValue) <= rating);
+  });
+}
+
+async function saveItemRating(value) {
+  if (!currentUser || !ratingItemId) return;
+  setLoading(true, value ? "Saving your rating…" : "Clearing your rating…");
+  const { error } = await sb.from("orders").update({ rating: value || null }).eq("id", ratingItemId);
+  if (error) { setLoading(false); return showToast("Couldn't save rating."); }
+  $("rateItemDialog").close();
+  await loadData(); render(); renderRestaurantSheet(); setLoading(false);
+  showToast(value ? `${value} star${value===1?"":"s"} saved ⭐` : "Rating cleared");
+}
+
+$("rateItemStars").addEventListener("click", e => {
+  const button=e.target.closest("[data-rate-value]");
+  if(button)saveItemRating(Number(button.dataset.rateValue));
+});
+$("clearItemRatingBtn").addEventListener("click",()=>saveItemRating(null));
 
 $("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -787,6 +853,10 @@ function ratingStars(value) {
   return `<div class="rating-stars" aria-label="${rating} out of 5 stars">${"★".repeat(rating)}${"☆".repeat(5-rating)}</div>`;
 }
 
+function itemLinkLabel(type) {
+  return type === "item" ? "🔗 View item" : type === "menu" ? "📖 View full menu" : "🌐 Restaurant website";
+}
+
 function foodEmoji(name = "", category = "") {
   const text = `${name} ${category}`.toLowerCase();
   const choices = [
@@ -809,7 +879,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=21"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=23"));
 }
 
 
