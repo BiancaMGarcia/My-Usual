@@ -284,6 +284,9 @@ function openDiscover(){
   $("discoverResults").innerHTML="";
   $("restaurantSearchInput").value="";
   $("restaurantZipInput").value=localStorage.getItem(LAST_ZIP_STORAGE_KEY)||"";
+  const savedRadius=Number(localStorage.getItem("my-usual-search-radius"))||25;
+  $("restaurantRadiusInput").value=String(Math.min(50,Math.max(5,savedRadius)));
+  updateRestaurantRadiusLabel();
   $("discoverDialog").showModal();
   setTimeout(()=>($("restaurantZipInput").value?$("restaurantSearchInput"):$("restaurantZipInput")).focus(),100);
 }
@@ -294,18 +297,25 @@ async function searchRestaurants(suggestion=""){
   invalidateTopPicks();
   const search=$("restaurantSearchInput").value.trim();
   const zip=$("restaurantZipInput").value.trim();
+  const radiusMiles=Number($("restaurantRadiusInput").value)||25;
   if(!/^\d{5}$/.test(zip)){$("discoverStatus").textContent="Enter a valid 5-digit ZIP code.";$("restaurantZipInput").focus();return;}
   localStorage.setItem(LAST_ZIP_STORAGE_KEY,zip);
-  const query=`${suggestion||search||"popular restaurants"} near ${zip}`;
+  localStorage.setItem("my-usual-search-radius",String(radiusMiles));
+  const searchTerm=suggestion||search||"popular restaurants";
+  const query=`Find up to 15 currently open restaurants matching "${searchTerm}" within ${radiusMiles} miles of ZIP code ${zip}. Include nearby cities and different ZIP codes. Use fuzzy name matching, partial names, common spelling variations, and the restaurant's full official name. Do not require an exact name or exact ZIP-code match.`;
   $("restaurantSearchBtn").disabled=true;$("restaurantSearchBtn").textContent="Searching…";$("discoverStatus").textContent="Searching restaurants…";showRestaurantSearchLoading();
   try{
-    const response=await fetch(`${SUPABASE_URL}/functions/v1/search-restaurants`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({query})});
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/search-restaurants`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({query,searchTerm,zip,radiusMiles})});
     const result=await response.json();
     if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";$("discoverResults").innerHTML="";return;}
     discoveredRestaurants=result.restaurants||[];
-    $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found near ${zip}`:"No restaurants found in that area. Try another search.";
+    $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found within ${radiusMiles} miles of ${zip}`:`No restaurants found within ${radiusMiles} miles. Try expanding the radius.`;
     $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>{const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";return `<button class="discover-result" data-discovered-index="${index}"><strong>${foodEmoji(r.name,kind)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(kind)}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button>`;}).join("");
   }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";$("discoverResults").innerHTML="";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
+}
+function updateRestaurantRadiusLabel(){
+  const miles=Number($("restaurantRadiusInput").value)||25;
+  $("restaurantRadiusValue").textContent=`${miles} miles`;
 }
 function openDiscoveredRestaurant(index){
   selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
@@ -853,6 +863,7 @@ $("restaurantSearchBtn").addEventListener("click",()=>searchRestaurants());
 $("restaurantSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
 $("restaurantZipInput").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,5);});
 $("restaurantZipInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
+$("restaurantRadiusInput").addEventListener("input",updateRestaurantRadiusLabel);
 $("restaurantSuggestionChips").addEventListener("click",e=>{const btn=e.target.closest("[data-suggestion]");if(btn)searchRestaurants(btn.dataset.suggestion);});
 $("discoverResults").addEventListener("click",e=>{const btn=e.target.closest("[data-discovered-index]");if(btn)openDiscoveredRestaurant(Number(btn.dataset.discoveredIndex));});
 $("saveDiscoveredRestaurantBtn").addEventListener("click",saveDiscoveredRestaurant);
@@ -911,7 +922,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=27"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=28"));
 }
 
 
