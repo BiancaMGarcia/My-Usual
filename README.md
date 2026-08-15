@@ -1,10 +1,13 @@
-# My Usual V2 — Supabase Sync
+# My Usual V3
 
-This version uses Supabase as the shared database.
+Connected to the North America West Supabase project.
 
-- Public users can browse, search, pick, and copy orders without logging in.
-- The admin signs in with the Supabase account created for My Usual.
-- Only users listed in `public.admin_users` can add, edit, or delete.
-- Admin can optionally import the old V1 localStorage data from the current device.
+New:
+- Find a Restaurant via Supabase Edge Function + Google Places
+- Restaurant address/type results
+- View restaurant website/menu
+- Open Google Maps
+- Save discovered restaurant to My Usual (admin only)
+- Top 5 Picks area prepared for personalized recommendations
 
-Deploy by replacing the existing GitHub Pages repo files with the contents of this folder.
+Replace the current GitHub Pages repo files with the contents of this folder.

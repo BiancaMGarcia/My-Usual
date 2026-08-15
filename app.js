@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://tfxassfbwthgavhptatb.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_kRfARJZw0tGdKS_kJQXjiA_KG-g8896";
+const SUPABASE_URL = "https://ntjrvvruniofgcduhgyk.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pCnl_RWebLHeQg6wDkZvyg_jWbjabxH";
 const LEGACY_STORAGE_KEY = "my-usual-data-v1";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -14,6 +14,8 @@ let editingRestaurantId = null;
 let editingItemId = null;
 let currentUser = null;
 let isAdmin = false;
+let discoveredRestaurants = [];
+let selectedDiscoveredRestaurant = null;
 const $ = id => document.getElementById(id);
 
 function showToast(message) {
@@ -209,6 +211,45 @@ function openItemForm(id = null) {
   $("itemNameInput").value = item?.name ?? "";
   $("itemNotesInput").value = item?.notes ?? "";
   $("editItemDialog").showModal();
+}
+
+
+function openDiscover(){
+  $("discoverStatus").textContent="";
+  $("discoverResults").innerHTML="";
+  $("restaurantSearchInput").value="";
+  $("discoverDialog").showModal();
+  setTimeout(()=>$("restaurantSearchInput").focus(),100);
+}
+async function searchRestaurants(){
+  const query=$("restaurantSearchInput").value.trim();
+  if(!query){$("discoverStatus").textContent="Enter a restaurant name and city.";return;}
+  $("restaurantSearchBtn").disabled=true;$("restaurantSearchBtn").textContent="Searching…";$("discoverStatus").textContent="Searching restaurants…";$("discoverResults").innerHTML="";
+  try{
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/search-restaurants`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({query})});
+    const result=await response.json();
+    if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";return;}
+    discoveredRestaurants=result.restaurants||[];
+    $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} result${discoveredRestaurants.length===1?"":"s"} found`:"No restaurants found. Try including the city.";
+    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>`<button class="discover-result" data-discovered-index="${index}"><strong>${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(r.type||"Restaurant")}</div><div class="meta">${escapeHtml(r.address||"")}</div></button>`).join("");
+  }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Search";}
+}
+function openDiscoveredRestaurant(index){
+  selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
+  $("discoveredName").textContent=r.name||"Restaurant";$("discoveredType").textContent=r.type||"Restaurant";$("discoveredAddress").textContent=r.address||"";
+  const menu=$("viewMenuBtn"); if(r.website){menu.href=r.website;menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
+  const maps=$("viewMapsBtn"); if(r.googleMapsUrl){maps.href=r.googleMapsUrl;maps.classList.remove("hidden");}else{maps.classList.add("hidden");}
+  const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
+  $("saveDiscoveredRestaurantBtn").textContent=existing?"✓ Already in My Usual":"＋ Save to My Usual";$("saveDiscoveredRestaurantBtn").disabled=!!existing;
+  $("discoverDialog").close();$("discoveredRestaurantDialog").showModal();
+}
+function extractLocationFromAddress(address=""){const parts=address.split(",").map(x=>x.trim()).filter(Boolean);return parts.length>=3?parts[parts.length-3]:"";}
+async function saveDiscoveredRestaurant(){
+  if(!selectedDiscoveredRestaurant)return;
+  if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Admin login required to save restaurants.");return;}
+  const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false};
+  const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast("Couldn't save restaurant.");return;}
+  await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
 }
 
 $("searchInput").addEventListener("input", render);
@@ -443,6 +484,15 @@ sb.auth.onAuthStateChange(async (_event, session) => {
   await refreshAdminStatus();
   render();
 });
+
+
+$("openDiscoverBtn").addEventListener("click",openDiscover);
+$("closeDiscoverBtn").addEventListener("click",()=>$("discoverDialog").close());
+$("closeDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRestaurantDialog").close();$("discoverDialog").showModal();});
+$("restaurantSearchBtn").addEventListener("click",searchRestaurants);
+$("restaurantSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
+$("discoverResults").addEventListener("click",e=>{const btn=e.target.closest("[data-discovered-index]");if(btn)openDiscoveredRestaurant(Number(btn.dataset.discoveredIndex));});
+$("saveDiscoveredRestaurantBtn").addEventListener("click",saveDiscoveredRestaurant);
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, c => ({

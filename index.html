@@ -25,6 +25,15 @@
         <input id="searchInput" type="search" placeholder="Search restaurants or food" autocomplete="off" />
       </section>
 
+      <section class="discover-card">
+        <div>
+          <p class="eyebrow">Trying somewhere new?</p>
+          <h2>Find a Restaurant</h2>
+          <p class="discover-copy">Search restaurants, open their menu or website, and save one to My Usual.</p>
+        </div>
+        <button id="openDiscoverBtn" class="primary-btn">🔎 Find a Restaurant</button>
+      </section>
+
       <section class="section">
         <div class="section-head">
           <h2>Categories</h2>
@@ -112,6 +121,44 @@
         <button type="submit" class="primary-btn">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="discoverDialog" class="sheet">
+    <div class="sheet-inner">
+      <div class="sheet-head">
+        <button id="closeDiscoverBtn" class="icon-btn">←</button>
+        <div><p class="eyebrow">New restaurant</p><h2>Find a Restaurant</h2></div>
+        <div class="spacer-icon"></div>
+      </div>
+      <div class="search-wrap discover-search">
+        <span>🔎</span>
+        <input id="restaurantSearchInput" type="search" placeholder="Try ‘Din Tai Fung Santa Clara’" autocomplete="off" />
+      </div>
+      <button id="restaurantSearchBtn" class="primary-btn full-btn">Search</button>
+      <p id="discoverStatus" class="discover-status"></p>
+      <div id="discoverResults" class="discover-results"></div>
+    </div>
+  </dialog>
+
+  <dialog id="discoveredRestaurantDialog" class="sheet">
+    <div class="sheet-inner">
+      <div class="sheet-head">
+        <button id="closeDiscoveredRestaurantBtn" class="icon-btn">←</button>
+        <div><p id="discoveredType" class="eyebrow">Restaurant</p><h2 id="discoveredName"></h2></div>
+        <div class="spacer-icon"></div>
+      </div>
+      <p id="discoveredAddress" class="detail-address"></p>
+      <div class="external-actions">
+        <a id="viewMenuBtn" class="primary-btn link-btn" target="_blank" rel="noopener">View Menu / Website ↗</a>
+        <a id="viewMapsBtn" class="secondary-btn link-btn" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+      </div>
+      <section class="top-picks-card">
+        <div class="section-head"><h3>✨ Top 5 Picks for You</h3></div>
+        <p class="top-picks-explainer">This area is ready for personalized recommendations. The next step will use her taste profile plus menu information to generate the five picks.</p>
+        <div class="empty">Recommendation setup comes next.</div>
+      </section>
+      <button id="saveDiscoveredRestaurantBtn" class="primary-btn full-btn">＋ Save to My Usual</button>
+    </div>
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
