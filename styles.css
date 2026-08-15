@@ -135,3 +135,21 @@ select {
   font-size: .92rem;
   line-height: 1.4;
 }
+
+.suggestion-group{display:grid;gap:8px;margin-top:2px}
+.suggestion-label{margin:0;color:var(--muted);font-size:.88rem;font-weight:700}
+.suggestion-chips{display:flex;flex-wrap:wrap;gap:8px}
+.suggestion-chips.compact{margin-top:2px}
+.suggestion-chip{
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--text);
+  border-radius:999px;
+  padding:9px 12px;
+  min-height:38px;
+  font-size:.9rem;
+  font-weight:700;
+  transition:transform .12s ease,background .12s ease,border-color .12s ease
+}
+.suggestion-chip:active{transform:scale(.97)}
+.suggestion-chip.selected{background:var(--accent-2);border-color:var(--accent);color:#6a3a2a}

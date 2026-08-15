@@ -747,3 +747,67 @@ window.addEventListener("DOMContentLoaded", () => {
   $("signOutUserBtn")?.addEventListener("click", signOutCurrentUser);
   $("closeAccountBtn")?.addEventListener("click", () => $("accountDialog").close());
 });
+
+
+function splitCsv(value) {
+  return value.split(",").map(x => x.trim()).filter(Boolean);
+}
+
+function refreshSuggestionChips() {
+  document.querySelectorAll(".suggestion-chip").forEach(chip => {
+    const group = chip.closest(".suggestion-chips");
+    const target = group ? document.getElementById(group.dataset.target) : null;
+    if (!group || !target) return;
+
+    const value = chip.dataset.value || "";
+    const mode = group.dataset.mode;
+    let selected = false;
+
+    if (mode === "select") {
+      selected = target.value === value;
+    } else if (mode === "notes") {
+      selected = target.value.split(";").map(x => x.trim().toLowerCase()).includes(value.toLowerCase());
+    } else {
+      selected = splitCsv(target.value).map(x => x.toLowerCase()).includes(value.toLowerCase());
+    }
+
+    chip.classList.toggle("selected", selected);
+  });
+}
+
+document.addEventListener("click", e => {
+  const chip = e.target.closest(".suggestion-chip");
+  if (!chip) return;
+
+  const group = chip.closest(".suggestion-chips");
+  const target = group ? document.getElementById(group.dataset.target) : null;
+  if (!group || !target) return;
+
+  const value = chip.dataset.value || "";
+  const mode = group.dataset.mode;
+
+  if (mode === "select") {
+    target.value = target.value === value ? "" : value;
+  } else if (mode === "notes") {
+    const values = target.value.split(";").map(x => x.trim()).filter(Boolean);
+    const idx = values.findIndex(v => v.toLowerCase() === value.toLowerCase());
+    if (idx >= 0) values.splice(idx, 1); else values.push(value);
+    target.value = values.join("; ");
+  } else {
+    const values = splitCsv(target.value);
+    const idx = values.findIndex(v => v.toLowerCase() === value.toLowerCase());
+    if (idx >= 0) values.splice(idx, 1); else values.push(value);
+    target.value = values.join(", ");
+  }
+
+  refreshSuggestionChips();
+});
+
+document.addEventListener("input", e => {
+  if (["tasteLikes","tasteDislikes","tasteProteins","tasteDishes","tasteNotes"].includes(e.target?.id)) {
+    refreshSuggestionChips();
+  }
+});
+document.addEventListener("change", e => {
+  if (e.target?.id === "tasteSpice") refreshSuggestionChips();
+});
