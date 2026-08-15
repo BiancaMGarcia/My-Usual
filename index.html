@@ -16,7 +16,7 @@
         <p class="eyebrow">What should I order?</p>
         <h1>My Usual</h1>
       </div>
-      <button id="editModeBtn" class="icon-btn" aria-label="Toggle edit mode">✏️</button>
+      <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
 
     <main>
@@ -164,6 +164,99 @@
         <div class="empty">Recommendation setup comes next.</div>
       </section>
       <button id="saveDiscoveredRestaurantBtn" class="primary-btn full-btn">＋ Save to My Usual</button>
+    </div>
+  </dialog>
+
+
+  <dialog id="authDialog" class="form-dialog">
+    <form id="authForm">
+      <h2 id="authTitle">Welcome to My Usual</h2>
+      <p class="login-help">Sign in to keep your own restaurants, usual orders, and taste profile.</p>
+
+      <label id="displayNameLabel">
+        Name
+        <input id="authDisplayName" autocomplete="name" placeholder="Your name" />
+      </label>
+
+      <label>
+        Email
+        <input id="authEmail" type="email" autocomplete="email" required />
+      </label>
+
+      <label>
+        Password
+        <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required />
+      </label>
+
+      <p id="authError" class="error-text hidden"></p>
+
+      <button id="authSubmitBtn" type="submit" class="primary-btn">Create account</button>
+      <button id="authSwitchBtn" type="button" class="text-btn">Already have an account? Sign in</button>
+      <button id="authCancelBtn" type="button" class="secondary-btn">Continue as guest</button>
+    </form>
+  </dialog>
+
+  <dialog id="onboardingDialog" class="sheet">
+    <div class="sheet-inner onboarding-shell">
+      <div class="onboarding-progress"><span id="onboardingProgressBar"></span></div>
+      <p id="onboardingStepLabel" class="eyebrow">Step 1 of 4</p>
+
+      <section class="onboarding-step" data-step="1">
+        <h2>What do you usually like?</h2>
+        <p class="onboarding-copy">Add foods, flavors, or dishes you’re usually happy to order.</p>
+        <textarea id="tasteLikes" rows="5" placeholder="Noodles, dumplings, garlic, beef, fried rice..."></textarea>
+      </section>
+
+      <section class="onboarding-step hidden" data-step="2">
+        <h2>Anything you avoid?</h2>
+        <p class="onboarding-copy">Add ingredients, flavors, or foods you don’t like.</p>
+        <textarea id="tasteDislikes" rows="5" placeholder="Cilantro, raw onions, mushrooms..."></textarea>
+      </section>
+
+      <section class="onboarding-step hidden" data-step="3">
+        <h2>What fits you best?</h2>
+        <label>
+          Spice preference
+          <select id="tasteSpice">
+            <option value="">No preference</option>
+            <option value="None">No spice</option>
+            <option value="Mild">Mild</option>
+            <option value="Medium">Medium</option>
+            <option value="Spicy">Spicy</option>
+          </select>
+        </label>
+
+        <label>
+          Preferred proteins
+          <input id="tasteProteins" placeholder="Chicken, beef, pork, shrimp..." />
+        </label>
+
+        <label>
+          Favorite dish types
+          <input id="tasteDishes" placeholder="Noodle soups, rice dishes, dumplings..." />
+        </label>
+      </section>
+
+      <section class="onboarding-step hidden" data-step="4">
+        <h2>Anything else we should know?</h2>
+        <p class="onboarding-copy">This can be as simple as “I like familiar foods” or “I prefer lighter meals.”</p>
+        <textarea id="tasteNotes" rows="5" placeholder="Prefers familiar flavors, likes crispy textures..."></textarea>
+      </section>
+
+      <div class="onboarding-actions">
+        <button id="onboardingBackBtn" class="secondary-btn hidden" type="button">Back</button>
+        <button id="onboardingNextBtn" class="primary-btn" type="button">Next</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="accountDialog" class="form-dialog">
+    <div class="admin-panel">
+      <h2>Your Account</h2>
+      <p id="accountEmail" class="login-help"></p>
+      <button id="editTasteProfileBtn" class="secondary-btn">Edit taste profile</button>
+      <button id="signOutUserBtn" class="secondary-btn">Sign out</button>
+      <button id="closeAccountBtn" class="primary-btn">Done</button>
     </div>
   </dialog>
 

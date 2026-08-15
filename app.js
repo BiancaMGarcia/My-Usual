@@ -14,6 +14,8 @@ let editingRestaurantId = null;
 let editingItemId = null;
 let currentUser = null;
 let isAdmin = false;
+let onboardingStep = 1;
+let authMode = "signup";
 let discoveredRestaurants = [];
 let selectedDiscoveredRestaurant = null;
 const $ = id => document.getElementById(id);
@@ -33,26 +35,28 @@ function setLoading(on) {
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   currentUser = session?.user ?? null;
-  await refreshAdminStatus();
-  await loadData();
-  render();
+
+  if (currentUser) {
+    await ensureProfile();
+    await loadData();
+    render();
+    await maybeStartOnboarding();
+  } else {
+    data = [];
+    render();
+    setTimeout(() => openAuthDialog("signup"), 250);
+  }
 }
 
 async function refreshAdminStatus() {
-  isAdmin = false;
-  if (!currentUser) return;
-  const { data: row } = await sb.from("admin_users")
-    .select("user_id")
-    .eq("user_id", currentUser.id)
-    .maybeSingle();
-  isAdmin = !!row;
-  if (!isAdmin) editMode = false;
+  isAdmin = !!currentUser;
 }
 
 async function loadData() {
   setLoading(true);
   const { data: restaurants, error: rError } = await sb.from("restaurants")
     .select("*")
+    .eq("user_id", currentUser.id)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
@@ -112,8 +116,8 @@ function render() {
     ? filtered.map(restaurantCard).join("")
     : `<div class="empty">${data.length ? "No restaurants found." : "No restaurants saved yet."}</div>`;
 
-  $("addRestaurantBtn").classList.toggle("hidden", !editMode || !isAdmin);
-  $("editModeBtn").textContent = editMode ? "✓" : (currentUser && isAdmin ? "⚙️" : "🔒");
+  $("addRestaurantBtn").classList.toggle("hidden", !currentUser);
+  $("editModeBtn").textContent = currentUser ? "👤" : "🔐";
 }
 
 function restaurantCard(r) {
@@ -143,9 +147,9 @@ function renderRestaurantSheet() {
   $("restaurantName").textContent = r.name;
   $("restaurantCategory").textContent = [r.category, r.location].filter(Boolean).join(" · ");
   $("favoriteBtn").textContent = r.favorite ? "⭐" : "♡";
-  $("favoriteBtn").disabled = !editMode || !isAdmin;
-  $("favoriteBtn").style.opacity = (!editMode || !isAdmin) ? ".45" : "1";
-  $("addItemBtn").classList.toggle("hidden", !editMode || !isAdmin);
+  $("favoriteBtn").disabled = !currentUser;
+  $("favoriteBtn").style.opacity = (!currentUser) ? ".45" : "1";
+  $("addItemBtn").classList.toggle("hidden", !currentUser);
 
   $("orderList").innerHTML = r.items.length ? r.items.map(item => `
     <div class="order-card">
@@ -191,7 +195,7 @@ function pickForMe() {
 }
 
 function openRestaurantForm(id = null) {
-  if (!isAdmin) return;
+  if (!currentUser) return;
   editingRestaurantId = id;
   const r = id ? data.find(x => x.id === id) : null;
   $("restaurantFormTitle").textContent = r ? "Edit restaurant" : "Add restaurant";
@@ -203,7 +207,7 @@ function openRestaurantForm(id = null) {
 }
 
 function openItemForm(id = null) {
-  if (!isAdmin) return;
+  if (!currentUser) return;
   editingItemId = id;
   const r = data.find(x => x.id === selectedRestaurantId);
   const item = id ? r?.items.find(x => x.id === id) : null;
@@ -246,7 +250,7 @@ function openDiscoveredRestaurant(index){
 function extractLocationFromAddress(address=""){const parts=address.split(",").map(x=>x.trim()).filter(Boolean);return parts.length>=3?parts[parts.length-3]:"";}
 async function saveDiscoveredRestaurant(){
   if(!selectedDiscoveredRestaurant)return;
-  if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Admin login required to save restaurants.");return;}
+  if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Sign in to save restaurants.");return;}
   const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false};
   const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast("Couldn't save restaurant.");return;}
   await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
@@ -276,7 +280,7 @@ document.addEventListener("click", async e => {
   if (editItem) openItemForm(editItem.dataset.editItem);
 
   const deleteItem = e.target.closest("[data-delete-item]");
-  if (deleteItem && isAdmin) {
+  if (deleteItem && currentUser) {
     if (!confirm("Delete this saved order?")) return;
     const { error } = await sb.from("orders").delete().eq("id", deleteItem.dataset.deleteItem);
     if (error) return showToast("Couldn't delete order.");
@@ -315,7 +319,7 @@ $("closeRestaurantBtn").addEventListener("click", () => $("restaurantDialog").cl
 $("pickForMeBtn").addEventListener("click", pickForMe);
 
 $("favoriteBtn").addEventListener("click", async () => {
-  if (!editMode || !isAdmin) return;
+  if (!currentUser) return;
   const r = data.find(x => x.id === selectedRestaurantId);
   if (!r) return;
   const { error } = await sb.from("restaurants").update({ favorite: !r.favorite }).eq("id", r.id);
@@ -327,13 +331,14 @@ $("favoriteBtn").addEventListener("click", async () => {
 
 $("restaurantForm").addEventListener("submit", async e => {
   e.preventDefault();
-  if (!isAdmin) return;
+  if (!currentUser) return;
 
   const payload = {
     name: $("restaurantNameInput").value.trim(),
     category: $("restaurantCategoryInput").value.trim(),
     location: $("restaurantLocationInput").value.trim() || null,
-    favorite: $("restaurantFavoriteInput").checked
+    favorite: $("restaurantFavoriteInput").checked,
+    user_id: currentUser.id
   };
 
   let error;
@@ -353,7 +358,7 @@ $("restaurantForm").addEventListener("submit", async e => {
 
 $("itemForm").addEventListener("submit", async e => {
   e.preventDefault();
-  if (!isAdmin) return;
+  if (!currentUser) return;
 
   const name = $("itemNameInput").value.trim();
   const notes = $("itemNotesInput").value.trim() || null;
@@ -439,7 +444,7 @@ $("signOutBtn").addEventListener("click", async () => {
 });
 
 $("importV1Btn").addEventListener("click", async () => {
-  if (!isAdmin) return;
+  if (!currentUser) return;
 
   const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
   if (!raw) return showToast("No V1 data found on this device.");
@@ -505,3 +510,240 @@ init();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
 }
+
+
+async function ensureProfile() {
+  if (!currentUser) return;
+
+  const { data: existing } = await sb
+    .from("profiles")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (!existing) {
+    await sb.from("profiles").insert({
+      user_id: currentUser.id,
+      display_name: currentUser.user_metadata?.display_name || currentUser.email?.split("@")[0] || "User",
+      onboarding_complete: false
+    });
+  }
+}
+
+async function maybeStartOnboarding() {
+  if (!currentUser) return;
+
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("onboarding_complete")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (!profile?.onboarding_complete) {
+    await loadTasteProfileIntoForm();
+    startOnboarding();
+  }
+}
+
+function openAuthDialog(mode = "signup") {
+  authMode = mode;
+  $("authError").classList.add("hidden");
+  $("authError").textContent = "";
+
+  const signup = mode === "signup";
+  $("authTitle").textContent = signup ? "Welcome to My Usual" : "Welcome back";
+  $("displayNameLabel").classList.toggle("hidden", !signup);
+  $("authSubmitBtn").textContent = signup ? "Create account" : "Sign in";
+  $("authSwitchBtn").textContent = signup
+    ? "Already have an account? Sign in"
+    : "New here? Create an account";
+
+  if (!$("authDialog").open) $("authDialog").showModal();
+}
+
+function startOnboarding() {
+  onboardingStep = 1;
+  renderOnboardingStep();
+  if (!$("onboardingDialog").open) $("onboardingDialog").showModal();
+}
+
+function renderOnboardingStep() {
+  document.querySelectorAll(".onboarding-step").forEach(el => {
+    el.classList.toggle("hidden", Number(el.dataset.step) !== onboardingStep);
+  });
+
+  $("onboardingStepLabel").textContent = `Step ${onboardingStep} of 4`;
+  $("onboardingProgressBar").style.width = `${onboardingStep * 25}%`;
+  $("onboardingBackBtn").classList.toggle("hidden", onboardingStep === 1);
+  $("onboardingNextBtn").textContent = onboardingStep === 4 ? "Finish" : "Next";
+}
+
+async function loadTasteProfileIntoForm() {
+  if (!currentUser) return;
+
+  const { data: taste } = await sb
+    .from("taste_profile")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  $("tasteLikes").value = taste?.likes || "";
+  $("tasteDislikes").value = taste?.dislikes || "";
+  $("tasteSpice").value = taste?.spice_preference || "";
+  $("tasteProteins").value = taste?.preferred_proteins || "";
+  $("tasteDishes").value = taste?.preferred_dishes || "";
+  $("tasteNotes").value = taste?.notes || "";
+}
+
+async function saveTasteProfileAndFinish() {
+  if (!currentUser) return;
+
+  const payload = {
+    user_id: currentUser.id,
+    likes: $("tasteLikes").value.trim() || null,
+    dislikes: $("tasteDislikes").value.trim() || null,
+    spice_preference: $("tasteSpice").value || null,
+    preferred_proteins: $("tasteProteins").value.trim() || null,
+    preferred_dishes: $("tasteDishes").value.trim() || null,
+    notes: $("tasteNotes").value.trim() || null
+  };
+
+  const { error: tasteError } = await sb
+    .from("taste_profile")
+    .upsert(payload, { onConflict: "user_id" });
+
+  if (tasteError) {
+    console.error(tasteError);
+    showToast("Couldn't save taste profile.");
+    return;
+  }
+
+  const { error: profileError } = await sb
+    .from("profiles")
+    .update({ onboarding_complete: true })
+    .eq("user_id", currentUser.id);
+
+  if (profileError) {
+    console.error(profileError);
+    showToast("Couldn't finish onboarding.");
+    return;
+  }
+
+  $("onboardingDialog").close();
+  showToast("Taste profile saved");
+}
+
+async function signOutCurrentUser() {
+  await sb.auth.signOut();
+  currentUser = null;
+  isAdmin = false;
+  editMode = false;
+  data = [];
+  if ($("accountDialog").open) $("accountDialog").close();
+  render();
+  openAuthDialog("signin");
+}
+
+function openAccountDialog() {
+  if (!currentUser) {
+    openAuthDialog("signin");
+    return;
+  }
+  $("accountEmail").textContent = currentUser.email || "";
+  $("accountDialog").showModal();
+}
+
+
+
+window.addEventListener("DOMContentLoaded", () => {
+  const oldAccountBtn = $("editModeBtn");
+  if (oldAccountBtn) {
+    const fresh = oldAccountBtn.cloneNode(true);
+    oldAccountBtn.replaceWith(fresh);
+    fresh.textContent = currentUser ? "👤" : "🔐";
+    fresh.addEventListener("click", openAccountDialog);
+  }
+
+  $("authForm")?.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const email = $("authEmail").value.trim();
+    const password = $("authPassword").value;
+    const displayName = $("authDisplayName").value.trim();
+    const errorBox = $("authError");
+    errorBox.classList.add("hidden");
+
+    if (authMode === "signup") {
+      const { data: authData, error } = await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: displayName || email.split("@")[0] } }
+      });
+
+      if (error) {
+        errorBox.textContent = error.message;
+        errorBox.classList.remove("hidden");
+        return;
+      }
+
+      if (!authData.session) {
+        errorBox.textContent = "Check your email to confirm your account, then come back and sign in.";
+        errorBox.classList.remove("hidden");
+        return;
+      }
+
+      currentUser = authData.user;
+      isAdmin = true;
+      await ensureProfile();
+      $("authDialog").close();
+      await loadData();
+      render();
+      await maybeStartOnboarding();
+    } else {
+      const { data: authData, error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        errorBox.textContent = "That email or password didn't work.";
+        errorBox.classList.remove("hidden");
+        return;
+      }
+
+      currentUser = authData.user;
+      isAdmin = true;
+      await ensureProfile();
+      $("authDialog").close();
+      await loadData();
+      render();
+      await maybeStartOnboarding();
+    }
+  });
+
+  $("authSwitchBtn")?.addEventListener("click", () => {
+    openAuthDialog(authMode === "signup" ? "signin" : "signup");
+  });
+
+  $("authCancelBtn")?.addEventListener("click", () => $("authDialog").close());
+
+  $("onboardingBackBtn")?.addEventListener("click", () => {
+    if (onboardingStep > 1) onboardingStep--;
+    renderOnboardingStep();
+  });
+
+  $("onboardingNextBtn")?.addEventListener("click", async () => {
+    if (onboardingStep < 4) {
+      onboardingStep++;
+      renderOnboardingStep();
+    } else {
+      await saveTasteProfileAndFinish();
+    }
+  });
+
+  $("editTasteProfileBtn")?.addEventListener("click", async () => {
+    $("accountDialog").close();
+    await loadTasteProfileIntoForm();
+    startOnboarding();
+  });
+
+  $("signOutUserBtn")?.addEventListener("click", signOutCurrentUser);
+  $("closeAccountBtn")?.addEventListener("click", () => $("accountDialog").close());
+});

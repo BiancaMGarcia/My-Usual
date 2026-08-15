@@ -88,3 +88,50 @@ textarea { resize: vertical; }
 .discover-card{margin:20px 0 4px;background:linear-gradient(135deg,#fff,#fff1e9);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);display:grid;gap:14px}.discover-card h2{margin:0 0 6px}.discover-copy{margin:0;color:var(--muted);line-height:1.45}.full-btn{width:100%}.discover-search{margin:8px 0 10px}.discover-status{color:var(--muted);min-height:1.2em;margin:14px 2px 8px}.discover-results{display:grid;gap:12px}.discover-result{width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:15px;box-shadow:var(--shadow)}.discover-result strong{display:block;font-size:1.04rem;margin-bottom:5px}.discover-result .meta{line-height:1.4}.spacer-icon{width:44px;height:44px}.detail-address{color:var(--muted);line-height:1.5;margin:2px 0 18px}.external-actions{display:grid;gap:10px;margin-bottom:22px}.link-btn{display:flex;align-items:center;justify-content:center;text-decoration:none}.top-picks-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin:0 0 18px;box-shadow:var(--shadow)}.top-picks-explainer{color:var(--muted);line-height:1.45;margin:8px 0 14px}
 
 .usual-search-block{margin:22px 0 8px}.usual-search-block .search-wrap{margin:10px 0 0}.search-label{display:flex;flex-direction:column;gap:3px;margin:0 4px}.search-label strong{font-size:1rem}.search-label span{font-size:.86rem;color:var(--muted)}.usual-search{background:#fff}.discover-card{margin-top:26px;border-style:solid}.discover-card .eyebrow{margin-bottom:6px}.discover-card .primary-btn{margin-top:2px}
+
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: white;
+  padding: 12px 13px;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+}
+.onboarding-shell { max-width: 620px; margin: 0 auto; }
+.onboarding-progress {
+  height: 8px;
+  background: #f0e6df;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.onboarding-progress span {
+  display: block;
+  width: 25%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width .2s ease;
+}
+.onboarding-step h2 { font-size: 1.8rem; margin: 6px 0 8px; }
+.onboarding-copy { color: var(--muted); line-height: 1.5; margin: 0 0 16px; }
+.onboarding-step { display: grid; gap: 16px; }
+.onboarding-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+.onboarding-actions .primary-btn:only-child { grid-column: 1 / -1; }
+.guest-banner {
+  background: #fff3ea;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  color: var(--muted);
+  margin: 12px 0 0;
+  font-size: .92rem;
+  line-height: 1.4;
+}
