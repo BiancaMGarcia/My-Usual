@@ -293,12 +293,12 @@ async function searchRestaurants(suggestion=""){
     if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";$("discoverResults").innerHTML="";return;}
     discoveredRestaurants=result.restaurants||[];
     $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found near ${zip}`:"No restaurants found in that area. Try another search.";
-    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>`<button class="discover-result" data-discovered-index="${index}"><strong>${foodEmoji(r.name,r.type)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(r.type||"Restaurant")}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button>`).join("");
+    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>{const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";return `<button class="discover-result" data-discovered-index="${index}"><strong>${foodEmoji(r.name,kind)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(kind)}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button>`;}).join("");
   }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";$("discoverResults").innerHTML="";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
 }
 function openDiscoveredRestaurant(index){
   selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
-  $("discoveredName").textContent=`${foodEmoji(r.name,r.type)} ${r.name||"Restaurant"}`;$("discoveredType").textContent=r.type||"Restaurant";$("discoveredAddress").textContent=r.address?`📍 ${r.address}`:"";
+  const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";$("discoveredName").textContent=`${foodEmoji(r.name,kind)} ${r.name||"Restaurant"}`;$("discoveredType").textContent=kind;$("discoveredAddress").textContent=r.address?`📍 ${r.address}`:"";
   const menu=$("viewMenuBtn"); if(r.website){menu.href=r.website;menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
   const maps=$("viewMapsBtn"); if(r.googleMapsUrl){maps.href=r.googleMapsUrl;maps.classList.remove("hidden");}else{maps.classList.add("hidden");}
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
@@ -805,7 +805,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=20"));
 }
 
 

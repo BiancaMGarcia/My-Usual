@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v19-grounded-menu";
-const ASSETS = ["./", "./index.html", "./styles.css?v=19", "./app.js?v=19", "./manifest.webmanifest?v=19", "./icon-192.png?v=19", "./icon-512.png?v=19"];
+const CACHE = "my-usual-v20-menu-fallbacks";
+const ASSETS = ["./", "./index.html", "./styles.css?v=20", "./app.js?v=20", "./manifest.webmanifest?v=20", "./icon-192.png?v=20", "./icon-512.png?v=20"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
