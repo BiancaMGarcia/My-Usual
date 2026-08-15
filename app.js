@@ -299,7 +299,7 @@ async function searchRestaurants(suggestion=""){
 function openDiscoveredRestaurant(index){
   selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
   const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";$("discoveredName").textContent=`${foodEmoji(r.name,kind)} ${r.name||"Restaurant"}`;$("discoveredType").textContent=kind;$("discoveredAddress").textContent=r.address?`📍 ${r.address}`:"";
-  const menu=$("viewMenuBtn"); if(r.website){menu.href=r.website;menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
+  const menu=$("viewMenuBtn"); const initialMenu=safeUrl(r.menuUrl||r.website); if(initialMenu){menu.href=initialMenu;menu.textContent=r.menuUrl?"View Menu ↗":"View Website / Find Menu ↗";menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
   const maps=$("viewMapsBtn"); if(r.googleMapsUrl){maps.href=r.googleMapsUrl;maps.classList.remove("hidden");}else{maps.classList.add("hidden");}
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
   $("saveDiscoveredRestaurantBtn").textContent=existing?"✓ Already in My Usual":"＋ Save to My Usual";$("saveDiscoveredRestaurantBtn").disabled=!!existing;
@@ -381,7 +381,7 @@ async function ensureDiscoveredRestaurantSaved(){
   if(!r||!currentUser)throw new Error("Sign in to save recommendations.");
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
   if(existing)return existing;
-  const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,website_url:safeUrl(r.website)||null,google_maps_url:safeUrl(r.googleMapsUrl)||null,favorite:false,user_id:currentUser.id};
+  const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,website_url:safeUrl(r.menuUrl||r.website)||null,google_maps_url:safeUrl(r.googleMapsUrl)||null,favorite:false,user_id:currentUser.id};
   const {data:created,error}=await sb.from("restaurants").insert(payload).select("*").single();
   if(error)throw error;
   return {...created,items:[]};
@@ -443,6 +443,10 @@ async function loadTopPicks(){
     if(requestId!==topPicksRequestId)return;
     if(!response.ok)throw new Error(result.error||"Recommendations are unavailable right now.");
     if(!Array.isArray(result.picks)||!result.picks.length)throw new Error("No menu recommendations were found.");
+    if(result.menuUrl&&selectedDiscoveredRestaurant){
+      selectedDiscoveredRestaurant.menuUrl=safeUrl(result.menuUrl);
+      if(selectedDiscoveredRestaurant.menuUrl){$("viewMenuBtn").href=selectedDiscoveredRestaurant.menuUrl;$("viewMenuBtn").textContent="View Menu ↗";}
+    }
     renderTopPicks(result.picks.slice(0,5));
   }catch(error){
     if(requestId!==topPicksRequestId)return;
@@ -805,7 +809,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=20"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=21"));
 }
 
 
