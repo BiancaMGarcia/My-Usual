@@ -39,13 +39,13 @@ function renderAccountButton(){
   const button=$("editModeBtn");if(!button)return;
   if(!currentUser){button.innerHTML="🔐";button.setAttribute("aria-label","Sign in");return;}
   const avatar=AVATARS.find(item=>item.id===currentAvatarId)||AVATARS[0];
-  button.innerHTML=`<img class="account-avatar" src="${avatar.src}?v=30" alt="" />`;
+  button.innerHTML=`<img class="account-avatar" src="${avatar.src}?v=31" alt="" />`;
   button.setAttribute("aria-label",`Account · ${avatar.name}`);
 }
 
 function renderAvatarPicker(){
   const picker=$("avatarPicker");if(!picker)return;
-  picker.innerHTML=AVATARS.map(avatar=>`<button type="button" class="avatar-option ${avatar.id===currentAvatarId?"selected":""}" data-avatar-id="${avatar.id}" role="radio" aria-checked="${avatar.id===currentAvatarId}" aria-label="${avatar.name}"><img src="${avatar.src}?v=30" alt="" /></button>`).join("");
+  picker.innerHTML=AVATARS.map(avatar=>`<button type="button" class="avatar-option ${avatar.id===currentAvatarId?"selected":""}" data-avatar-id="${avatar.id}" role="radio" aria-checked="${avatar.id===currentAvatarId}" aria-label="${avatar.name}"><img src="${avatar.src}?v=31" alt="" /></button>`).join("");
 }
 
 async function loadUserAvatar(){
@@ -542,7 +542,8 @@ async function loadTopPicks(){
       body:JSON.stringify({
         restaurantName:restaurant?.name||"",
         restaurantAddress:restaurant?.address||"",
-        website:restaurant?.website||""
+        website:restaurant?.website||"",
+        menuUrl:restaurant?.menuUrl||""
       })
     });
 
@@ -1004,7 +1005,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=30"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=31"));
 }
 
 
