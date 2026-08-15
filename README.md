@@ -1,10 +1,10 @@
-# My Usual v28
+# My Usual v29
 
 My Usual is a pastel pink-and-purple restaurant and order-saving PWA with private user accounts, ZIP-code restaurant discovery, personalized Top 5 menu recommendations, ratings, and a guided taste profile.
 
 ## GitHub Pages files
 
-Upload these seven files to the repository root:
+Upload these thirteen files to the repository root:
 
 - `index.html`
 - `app.js`
@@ -13,6 +13,12 @@ Upload these seven files to the repository root:
 - `manifest.webmanifest`
 - `icon-192.png`
 - `icon-512.png`
+- `avatar-husky-blue.png`
+- `avatar-brown-peach.png`
+- `avatar-samoyed-lavender.png`
+- `avatar-white-mint.png`
+- `avatar-spitz-pink.png`
+- `avatar-shepherd-yellow.png`
 
 Keep the filenames exactly as shown. The homepage must be named `index.html`.
 
@@ -34,9 +40,25 @@ The function requires a Supabase secret named `GEMINI_API_KEY`. It verifies the 
 
 ## Restaurant discovery
 
-The app's `search-restaurants` Edge Function must already be deployed. Discovery accepts a five-digit ZIP code and an adjustable 5–50 mile radius. It asks for up to 15 results across nearby cities and uses partial-name and spelling-variation matching. Users may search by restaurant/cuisine or tap a suggested category.
+Replace the contents of the Supabase Edge Function named `search-restaurants` with `SEARCH_RESTAURANTS_V2_RADIUS.ts`, then deploy it. It logs `SEARCH_RESTAURANTS_VERSION=v2-radius-live-search` on every request so the deployed version is easy to verify.
 
-## v28 features
+Discovery accepts a five-digit ZIP code as a starting point and an adjustable 5–50 mile radius. The function uses live Google Search, asks for up to 15 results across nearby cities, and supports partial-name and spelling-variation matching. Users may search by restaurant/cuisine or tap a suggested category.
+
+## Required Supabase avatar update
+
+Run `PROFILE_AVATAR_MIGRATION.sql` once in the Supabase SQL Editor. This adds the saved profile-avatar choice for each user.
+
+## Manual restaurant details function
+
+Create or replace the Supabase Edge Function named `lookup-restaurant` with `LOOKUP_RESTAURANT_V1.ts`, then deploy it. It uses the existing `GEMINI_API_KEY` secret and logs `LOOKUP_RESTAURANT_VERSION=v1-live-details-did-you-mean`.
+
+## v29 features
+
+- Six selectable pastel cartoon dog profile avatars
+- Saved avatar replaces the generic person emoji across devices
+- Manual restaurant form can find official menu, website, and Google Maps links
+- “Did you mean?” restaurant matches for partial or misspelled names
+- Clear Menu, Restaurant website, and Google Maps link labels
 
 - Adjustable 5–50 mile restaurant-search radius
 - Remembers the user's last selected radius
@@ -80,4 +102,4 @@ The app's `search-restaurants` Edge Function must already be deployed. Discovery
 
 ## Refreshing after deployment
 
-v28 uses new cache identifiers. After GitHub Pages finishes deploying, refresh the page. If an older version remains visible, close the installed app or browser tab and reopen it. As a last resort, clear the site's stored data or uninstall and reinstall the home-screen app.
+v29 uses new cache identifiers. After GitHub Pages finishes deploying, refresh the page. If an older version remains visible, close the installed app or browser tab and reopen it. As a last resort, clear the site's stored data or uninstall and reinstall the home-screen app.

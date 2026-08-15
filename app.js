@@ -23,7 +23,45 @@ let selectedDiscoveredRestaurant = null;
 let topPicksRequestId = 0;
 let currentTopPicks = [];
 let loadingCount = 0;
+let restaurantLookupMatches = [];
+let currentAvatarId = "avatar-1";
 const $ = id => document.getElementById(id);
+const AVATARS=[
+  {id:"avatar-1",src:"avatar-husky-blue.png",name:"Happy Husky"},
+  {id:"avatar-2",src:"avatar-brown-peach.png",name:"Cocoa Pup"},
+  {id:"avatar-3",src:"avatar-samoyed-lavender.png",name:"Cloud Samoyed"},
+  {id:"avatar-4",src:"avatar-white-mint.png",name:"Little Snow Pup"},
+  {id:"avatar-5",src:"avatar-spitz-pink.png",name:"Smiley Spitz"},
+  {id:"avatar-6",src:"avatar-shepherd-yellow.png",name:"Shepherd Buddy"}
+];
+
+function renderAccountButton(){
+  const button=$("editModeBtn");if(!button)return;
+  if(!currentUser){button.innerHTML="🔐";button.setAttribute("aria-label","Sign in");return;}
+  const avatar=AVATARS.find(item=>item.id===currentAvatarId)||AVATARS[0];
+  button.innerHTML=`<img class="account-avatar" src="${avatar.src}?v=29" alt="" />`;
+  button.setAttribute("aria-label",`Account · ${avatar.name}`);
+}
+
+function renderAvatarPicker(){
+  const picker=$("avatarPicker");if(!picker)return;
+  picker.innerHTML=AVATARS.map(avatar=>`<button type="button" class="avatar-option ${avatar.id===currentAvatarId?"selected":""}" data-avatar-id="${avatar.id}" role="radio" aria-checked="${avatar.id===currentAvatarId}" aria-label="${avatar.name}"><img src="${avatar.src}?v=29" alt="" /></button>`).join("");
+}
+
+async function loadUserAvatar(){
+  if(!currentUser){currentAvatarId="avatar-1";renderAccountButton();return;}
+  const {data:profile,error}=await sb.from("profiles").select("avatar_id").eq("user_id",currentUser.id).maybeSingle();
+  if(error&&isMissingColumnError(error,"avatar_id")){currentAvatarId="avatar-1";}else if(profile?.avatar_id&&AVATARS.some(a=>a.id===profile.avatar_id)){currentAvatarId=profile.avatar_id;}
+  renderAccountButton();
+}
+
+async function chooseAvatar(avatarId){
+  if(!currentUser||!AVATARS.some(avatar=>avatar.id===avatarId))return;
+  const previous=currentAvatarId;currentAvatarId=avatarId;renderAccountButton();renderAvatarPicker();
+  const {error}=await sb.from("profiles").update({avatar_id:avatarId}).eq("user_id",currentUser.id);
+  if(error){currentAvatarId=previous;renderAccountButton();renderAvatarPicker();showToast(isMissingColumnError(error,"avatar_id")?"Run PROFILE_AVATAR_MIGRATION.sql first.":"Couldn't save avatar.");return;}
+  showToast("Profile buddy updated ✨");
+}
 
 function showToast(message) {
   const toast = $("toast");
@@ -49,6 +87,7 @@ async function init() {
   if (currentUser) {
     await refreshAdminStatus();
     await ensureProfile();
+    await loadUserAvatar();
     await loadData();
     render();
     await maybeStartOnboarding();
@@ -133,7 +172,7 @@ function render() {
     : `<div class="empty">${data.length ? "No restaurants found." : "No restaurants saved yet."}</div>`;
 
   $("addRestaurantBtn").classList.toggle("hidden", !currentUser);
-  $("editModeBtn").textContent = currentUser ? "👤" : "🔐";
+  renderAccountButton();
 }
 
 function restaurantCard(r) {
@@ -255,7 +294,48 @@ function openRestaurantForm(id = null) {
   $("restaurantMapsInput").value = r?.google_maps_url ?? "";
   $("restaurantRatingInput").value = r?.rating ?? "";
   $("restaurantFavoriteInput").checked = r?.favorite ?? false;
+  restaurantLookupMatches=[];
+  $("findRestaurantDetailsStatus").classList.add("hidden");
+  $("findRestaurantDetailsStatus").textContent="";
+  $("findRestaurantSuggestions").classList.add("hidden");
+  $("findRestaurantSuggestions").innerHTML="";
   $("editRestaurantDialog").showModal();
+}
+
+function applyRestaurantLookupMatch(match){
+  if(!match)return;
+  $("restaurantNameInput").value=match.name||$("restaurantNameInput").value;
+  $("restaurantCategoryInput").value=match.type||$("restaurantCategoryInput").value||"Restaurant";
+  $("restaurantLocationInput").value=match.address||$("restaurantLocationInput").value;
+  const bestUrl=safeUrl(match.menuUrl||match.website);
+  $("restaurantWebsiteInput").value=bestUrl;
+  $("restaurantLinkTypeInput").value=match.menuUrl?"menu":"restaurant";
+  $("restaurantMapsInput").value=safeUrl(match.googleMapsUrl);
+  const linkLabel=match.menuUrl?"Menu":match.website?"Restaurant website":"no website";
+  $("findRestaurantDetailsStatus").textContent=`✓ Added ${linkLabel}${match.googleMapsUrl?" and Google Maps":""}. Review before saving.`;
+  $("findRestaurantDetailsStatus").classList.remove("hidden");
+}
+
+async function findRestaurantDetails(){
+  const restaurantName=$("restaurantNameInput").value.trim();
+  const location=$("restaurantLocationInput").value.trim();
+  const status=$("findRestaurantDetailsStatus");
+  const suggestions=$("findRestaurantSuggestions");
+  if(!restaurantName){status.textContent="Enter a restaurant name first.";status.classList.remove("hidden");$("restaurantNameInput").focus();return;}
+  $("findRestaurantDetailsBtn").disabled=true;
+  status.textContent="🔎 Looking for the official restaurant, menu, and Maps links…";status.classList.remove("hidden");
+  suggestions.classList.add("hidden");suggestions.innerHTML="";
+  try{
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-restaurant`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName,location})});
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||"Restaurant lookup failed.");
+    restaurantLookupMatches=Array.isArray(result.matches)?result.matches:[];
+    if(!restaurantLookupMatches.length){status.textContent="No confident match found. Try adding a city, ZIP code, or shopping center.";return;}
+    if(restaurantLookupMatches.length===1){applyRestaurantLookupMatch(restaurantLookupMatches[0]);return;}
+    status.textContent="Did you mean one of these?";
+    suggestions.innerHTML=restaurantLookupMatches.map((match,index)=>`<button type="button" data-restaurant-match="${index}"><strong>${foodEmoji(match.name,match.type)} ${escapeHtml(match.name)}</strong><span>${escapeHtml(match.address||"")}</span><small>${match.menuUrl?"📖 Menu":match.website?"🌐 Restaurant website":"No website"}${match.googleMapsUrl?" · 📍 Google Maps":""}</small></button>`).join("");
+    suggestions.classList.remove("hidden");
+  }catch(error){console.error(error);status.textContent=error.message||"Couldn't find restaurant details.";}finally{$("findRestaurantDetailsBtn").disabled=false;}
 }
 
 function openItemForm(id = null) {
@@ -310,7 +390,7 @@ async function searchRestaurants(suggestion=""){
     if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";$("discoverResults").innerHTML="";return;}
     discoveredRestaurants=result.restaurants||[];
     $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found within ${radiusMiles} miles of ${zip}`:`No restaurants found within ${radiusMiles} miles. Try expanding the radius.`;
-    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>{const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";return `<button class="discover-result" data-discovered-index="${index}"><strong>${foodEmoji(r.name,kind)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(kind)}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button>`;}).join("");
+    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>{const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";const distance=Number(r.distanceMiles)>0?` · about ${Number(r.distanceMiles).toFixed(1)} mi`:"";return `<button class="discover-result" data-discovered-index="${index}"><strong>${foodEmoji(r.name,kind)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(kind)}${distance}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button>`;}).join("");
   }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";$("discoverResults").innerHTML="";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
 }
 function updateRestaurantRadiusLabel(){
@@ -590,6 +670,8 @@ $("editModeBtn").addEventListener("click", async () => {
 });
 
 $("addRestaurantBtn").addEventListener("click", () => openRestaurantForm());
+$("findRestaurantDetailsBtn").addEventListener("click",findRestaurantDetails);
+$("findRestaurantSuggestions").addEventListener("click",e=>{const button=e.target.closest("[data-restaurant-match]");if(button){applyRestaurantLookupMatch(restaurantLookupMatches[Number(button.dataset.restaurantMatch)]);$("findRestaurantSuggestions").classList.add("hidden");}});
 $("addItemBtn").addEventListener("click", () => openItemForm());
 $("closeRestaurantBtn").addEventListener("click", () => $("restaurantDialog").close());
 $("pickForMeBtn").addEventListener("click", pickForMe);
@@ -922,7 +1004,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=28"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=29"));
 }
 
 
@@ -1060,6 +1142,7 @@ async function signOutCurrentUser() {
   isAdmin = false;
   editMode = false;
   data = [];
+  currentAvatarId="avatar-1";
   if ($("accountDialog").open) $("accountDialog").close();
   render();
   openAuthDialog("signin");
@@ -1071,6 +1154,7 @@ function openAccountDialog() {
     return;
   }
   $("accountEmail").textContent = currentUser.phone || currentUser.email || "";
+  renderAvatarPicker();
   $("accountDialog").showModal();
 }
 
@@ -1081,7 +1165,7 @@ window.addEventListener("DOMContentLoaded", () => {
   if (oldAccountBtn) {
     const fresh = oldAccountBtn.cloneNode(true);
     oldAccountBtn.replaceWith(fresh);
-    fresh.textContent = currentUser ? "👤" : "🔐";
+    renderAccountButton();
     fresh.addEventListener("click", openAccountDialog);
   }
 
@@ -1101,7 +1185,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     if(error){errorBox.textContent=error.message;errorBox.classList.remove("hidden");setLoading(false);return;}
     if(authMode==="signup"&&!authData.session){errorBox.textContent="Check your email to confirm your account, then come back and sign in.";errorBox.classList.remove("hidden");setLoading(false);return;}
-    currentUser=authData.user;isAdmin=true;await ensureProfile();$("authDialog").close();await loadData();render();await maybeStartOnboarding();
+    currentUser=authData.user;isAdmin=true;await ensureProfile();await loadUserAvatar();$("authDialog").close();await loadData();render();await maybeStartOnboarding();
     setLoading(false);
   });
 
@@ -1130,6 +1214,8 @@ window.addEventListener("DOMContentLoaded", () => {
     await loadTasteProfileIntoForm();
     startOnboarding();
   });
+
+  $("avatarPicker")?.addEventListener("click",e=>{const button=e.target.closest("[data-avatar-id]");if(button)chooseAvatar(button.dataset.avatarId);});
 
   $("signOutUserBtn")?.addEventListener("click", signOutCurrentUser);
   $("closeAccountBtn")?.addEventListener("click", () => $("accountDialog").close());
