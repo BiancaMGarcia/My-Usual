@@ -270,6 +270,8 @@ function openItemForm(id = null) {
   $("itemLinkTypeInput").value = item?.item_link_type || "item";
   $("findItemDetailsStatus").classList.add("hidden");
   $("findItemDetailsStatus").textContent = "";
+  $("findItemSuggestions").classList.add("hidden");
+  $("findItemSuggestions").innerHTML = "";
   $("itemNotesInput").value = item?.notes ?? "";
   $("itemRatingInput").value = item?.rating ?? "";
   $("editItemDialog").showModal();
@@ -694,6 +696,7 @@ $("findItemDetailsBtn").addEventListener("click", async () => {
   if(!restaurant)return showToast("Choose a restaurant first.");
   if(!itemName){status.textContent="Enter the item name first.";status.classList.remove("hidden");$("itemNameInput").focus();return;}
   const button=$("findItemDetailsBtn");button.disabled=true;button.textContent="✨ Looking through the menu…";
+  $("findItemSuggestions").classList.add("hidden");$("findItemSuggestions").innerHTML="";
   status.textContent="Searching for this item and the best available link…";status.classList.remove("hidden");
   try{
     const {data:{session}}=await sb.auth.getSession();
@@ -703,10 +706,15 @@ $("findItemDetailsBtn").addEventListener("click", async () => {
     if(result.description)$("itemDescriptionInput").value=result.description;
     if(safeUrl(result.url)){$("itemUrlInput").value=safeUrl(result.url);$("itemLinkTypeInput").value=["item","menu","restaurant"].includes(result.linkType)?result.linkType:"restaurant";}
     const label=result.linkType==="item"?"direct item link":result.linkType==="menu"?"full menu link":"restaurant website";
-    status.textContent=result.foundOnMenu?`✓ Exact menu details found${result.url?` with a ${label}`:""}. Review before saving.`:`The exact item description wasn't available in the readable menu. ${result.url?`Added the best available ${label}.`:"You can enter details manually."}`;
+    if(!result.foundOnMenu&&Array.isArray(result.suggestions)&&result.suggestions.length){
+      status.textContent="The name wasn't an exact menu match. Did you mean:";
+      $("findItemSuggestions").innerHTML=result.suggestions.map(name=>`<button type="button" data-item-suggestion="${escapeHtml(name)}">${foodEmoji(name)} ${escapeHtml(name)}</button>`).join("");$("findItemSuggestions").classList.remove("hidden");
+    }else status.textContent=result.foundOnMenu?`✓ Exact menu details found${result.url?` with a ${label}`:""}. Review before saving.`:`The exact item description wasn't available in the readable menu. ${result.url?`Added the best available ${label}.`:"You can enter details manually."}`;
   }catch(error){console.error(error);status.textContent=error.message||"Couldn't find item details.";}
   finally{button.disabled=false;button.textContent="✨ Find item details";}
 });
+
+$("findItemSuggestions").addEventListener("click",e=>{const button=e.target.closest("[data-item-suggestion]");if(!button)return;$("itemNameInput").value=button.dataset.itemSuggestion;$("findItemDetailsBtn").click();});
 
 function renderRateButtons(value) {
   const rating = Number(value) || 0;
@@ -903,7 +911,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=26"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=27"));
 }
 
 
