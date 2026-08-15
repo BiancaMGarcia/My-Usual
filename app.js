@@ -28,7 +28,8 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
   clearTimeout(showToast.timer);
-  showToast.timer = setTimeout(() => toast.classList.remove("show"), 1800);
+  const duration = /couldn't|error/i.test(message) ? 5000 : 1800;
+  showToast.timer = setTimeout(() => toast.classList.remove("show"), duration);
 }
 
 function setLoading(on, message = "Just a moment…") {
@@ -44,6 +45,7 @@ async function init() {
   currentUser = session?.user ?? null;
 
   if (currentUser) {
+    await refreshAdminStatus();
     await ensureProfile();
     await loadData();
     render();
@@ -340,7 +342,7 @@ async function saveDiscoveredRestaurant(){
   setLoading(true,"Saving to My Usual…");
   try{
     const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false,user_id:currentUser.id};
-    const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast("Couldn't save restaurant.");return;}
+    const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast(`Couldn't save: ${error.message||"Unknown database error"}`);return;}
     await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
   }finally{setLoading(false);}
 }
