@@ -1,4 +1,4 @@
-const CACHE = "my-usual-v6-zip-suggestions";
+const CACHE = "my-usual-v8-pastel-mascot";
 const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {

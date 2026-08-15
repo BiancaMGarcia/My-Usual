@@ -326,7 +326,7 @@ function extractLocationFromAddress(address=""){const parts=address.split(",").m
 async function saveDiscoveredRestaurant(){
   if(!selectedDiscoveredRestaurant)return;
   if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Sign in to save restaurants.");return;}
-  const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false};
+  const r=selectedDiscoveredRestaurant; const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,favorite:false,user_id:currentUser.id};
   const {error}=await sb.from("restaurants").insert(payload); if(error){console.error(error);showToast("Couldn't save restaurant.");return;}
   await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
 }
