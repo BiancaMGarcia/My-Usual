@@ -136,11 +136,21 @@
         <div><p class="eyebrow">✨ New restaurant</p><h2>Try Somewhere New</h2></div>
         <div class="spacer-icon"></div>
       </div>
-      <div class="search-wrap discover-search">
-        <span>🔎</span>
-        <input id="restaurantSearchInput" type="search" placeholder="Try ‘Din Tai Fung Santa Clara’" autocomplete="off" />
+      <div class="discover-fields">
+        <label>
+          Restaurant or cuisine <span class="muted">(optional)</span>
+          <div class="search-wrap discover-search"><span>🔎</span><input id="restaurantSearchInput" type="search" placeholder="Din Tai Fung, sushi, brunch…" autocomplete="off" /></div>
+        </label>
+        <label>ZIP code<input id="restaurantZipInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="94080" /></label>
       </div>
-      <button id="restaurantSearchBtn" class="primary-btn full-btn">Search</button>
+      <div class="suggestion-block">
+        <strong>Suggested near you</strong>
+        <span>Enter a ZIP code, then choose an idea or leave the search blank for popular nearby restaurants.</span>
+        <div id="restaurantSuggestionChips" class="suggestion-chips">
+          <button type="button" data-suggestion="popular restaurants">✨ Popular</button><button type="button" data-suggestion="Asian restaurants">🥟 Asian</button><button type="button" data-suggestion="Mexican restaurants">🌮 Mexican</button><button type="button" data-suggestion="Italian restaurants">🍝 Italian</button><button type="button" data-suggestion="brunch restaurants">🍳 Brunch</button><button type="button" data-suggestion="coffee shops">☕ Coffee</button><button type="button" data-suggestion="dessert shops">🍰 Dessert</button>
+        </div>
+      </div>
+      <button id="restaurantSearchBtn" class="primary-btn full-btn">Find Restaurants</button>
       <p id="discoverStatus" class="discover-status"></p>
       <div id="discoverResults" class="discover-results"></div>
     </div>
@@ -160,8 +170,10 @@
       </div>
       <section class="top-picks-card">
         <div class="section-head"><h3>✨ Top 5 Picks for You</h3></div>
-        <p class="top-picks-explainer">This area is ready for personalized recommendations. The next step will use her taste profile plus menu information to generate the five picks.</p>
-        <div class="empty">Recommendation setup comes next.</div>
+        <p id="topPicksExplainer" class="top-picks-explainer">Personalized using your taste profile and this restaurant’s menu.</p>
+        <div id="topPicksStatus" class="top-picks-status" role="status" aria-live="polite"></div>
+        <ol id="topPicksList" class="top-picks-list"></ol>
+        <button id="retryTopPicksBtn" class="secondary-btn full-btn hidden" type="button">Try recommendations again</button>
       </section>
       <button id="saveDiscoveredRestaurantBtn" class="primary-btn full-btn">＋ Save to My Usual</button>
     </div>
@@ -205,40 +217,12 @@
         <h2>What do you usually like?</h2>
         <p class="onboarding-copy">Add foods, flavors, or dishes you’re usually happy to order.</p>
         <textarea id="tasteLikes" rows="5" placeholder="Noodles, dumplings, garlic, beef, fried rice..."></textarea>
-<div class="suggestion-group">
-  <p class="suggestion-label">Tap some ideas:</p>
-  <div class="suggestion-chips" data-target="tasteLikes" data-mode="csv">
-    <button type="button" class="suggestion-chip" data-value="Noodles">Noodles</button>
-    <button type="button" class="suggestion-chip" data-value="Dumplings">Dumplings</button>
-    <button type="button" class="suggestion-chip" data-value="Fried rice">Fried rice</button>
-    <button type="button" class="suggestion-chip" data-value="Soup">Soup</button>
-    <button type="button" class="suggestion-chip" data-value="Garlic">Garlic</button>
-    <button type="button" class="suggestion-chip" data-value="Savory foods">Savory</button>
-    <button type="button" class="suggestion-chip" data-value="Crispy foods">Crispy</button>
-    <button type="button" class="suggestion-chip" data-value="Sweet foods">Sweet</button>
-    <button type="button" class="suggestion-chip" data-value="Cheesy foods">Cheesy</button>
-    <button type="button" class="suggestion-chip" data-value="Seafood">Seafood</button>
-  </div>
-</div>
       </section>
 
       <section class="onboarding-step hidden" data-step="2">
         <h2>Anything you avoid?</h2>
         <p class="onboarding-copy">Add ingredients, flavors, or foods you don’t like.</p>
         <textarea id="tasteDislikes" rows="5" placeholder="Cilantro, raw onions, mushrooms..."></textarea>
-<div class="suggestion-group">
-  <p class="suggestion-label">Common things people avoid:</p>
-  <div class="suggestion-chips" data-target="tasteDislikes" data-mode="csv">
-    <button type="button" class="suggestion-chip" data-value="Cilantro">Cilantro</button>
-    <button type="button" class="suggestion-chip" data-value="Raw onions">Raw onions</button>
-    <button type="button" class="suggestion-chip" data-value="Mushrooms">Mushrooms</button>
-    <button type="button" class="suggestion-chip" data-value="Olives">Olives</button>
-    <button type="button" class="suggestion-chip" data-value="Very spicy food">Very spicy</button>
-    <button type="button" class="suggestion-chip" data-value="Raw fish">Raw fish</button>
-    <button type="button" class="suggestion-chip" data-value="Eggplant">Eggplant</button>
-    <button type="button" class="suggestion-chip" data-value="Pickles">Pickles</button>
-  </div>
-</div>
       </section>
 
       <section class="onboarding-step hidden" data-step="3">
@@ -252,40 +236,16 @@
             <option value="Medium">Medium</option>
             <option value="Spicy">Spicy</option>
           </select>
-          <div class="suggestion-chips compact" data-target="tasteSpice" data-mode="select">
-            <button type="button" class="suggestion-chip" data-value="None">No spice</button>
-            <button type="button" class="suggestion-chip" data-value="Mild">Mild</button>
-            <button type="button" class="suggestion-chip" data-value="Medium">Medium</button>
-            <button type="button" class="suggestion-chip" data-value="Spicy">Spicy</button>
-          </div>
         </label>
 
         <label>
           Preferred proteins
           <input id="tasteProteins" placeholder="Chicken, beef, pork, shrimp..." />
-<div class="suggestion-chips compact" data-target="tasteProteins" data-mode="csv">
-  <button type="button" class="suggestion-chip" data-value="Chicken">Chicken</button>
-  <button type="button" class="suggestion-chip" data-value="Beef">Beef</button>
-  <button type="button" class="suggestion-chip" data-value="Pork">Pork</button>
-  <button type="button" class="suggestion-chip" data-value="Shrimp">Shrimp</button>
-  <button type="button" class="suggestion-chip" data-value="Fish">Fish</button>
-  <button type="button" class="suggestion-chip" data-value="Tofu">Tofu</button>
-</div>
         </label>
 
         <label>
           Favorite dish types
           <input id="tasteDishes" placeholder="Noodle soups, rice dishes, dumplings..." />
-<div class="suggestion-chips compact" data-target="tasteDishes" data-mode="csv">
-  <button type="button" class="suggestion-chip" data-value="Noodle soups">Noodle soups</button>
-  <button type="button" class="suggestion-chip" data-value="Rice dishes">Rice dishes</button>
-  <button type="button" class="suggestion-chip" data-value="Dumplings">Dumplings</button>
-  <button type="button" class="suggestion-chip" data-value="Pasta">Pasta</button>
-  <button type="button" class="suggestion-chip" data-value="Sandwiches">Sandwiches</button>
-  <button type="button" class="suggestion-chip" data-value="Grilled dishes">Grilled</button>
-  <button type="button" class="suggestion-chip" data-value="Fried foods">Fried foods</button>
-  <button type="button" class="suggestion-chip" data-value="Soups and stews">Soups & stews</button>
-</div>
         </label>
       </section>
 
@@ -293,19 +253,6 @@
         <h2>Anything else we should know?</h2>
         <p class="onboarding-copy">This can be as simple as “I like familiar foods” or “I prefer lighter meals.”</p>
         <textarea id="tasteNotes" rows="5" placeholder="Prefers familiar flavors, likes crispy textures..."></textarea>
-<div class="suggestion-group">
-  <p class="suggestion-label">Helpful preference ideas:</p>
-  <div class="suggestion-chips" data-target="tasteNotes" data-mode="notes">
-    <button type="button" class="suggestion-chip" data-value="Prefers familiar flavors">Familiar flavors</button>
-    <button type="button" class="suggestion-chip" data-value="Likes trying new foods">Adventurous</button>
-    <button type="button" class="suggestion-chip" data-value="Prefers crispy textures">Crispy textures</button>
-    <button type="button" class="suggestion-chip" data-value="Prefers soft or tender textures">Soft/tender</button>
-    <button type="button" class="suggestion-chip" data-value="Likes rich and savory foods">Rich & savory</button>
-    <button type="button" class="suggestion-chip" data-value="Prefers lighter meals">Lighter meals</button>
-    <button type="button" class="suggestion-chip" data-value="Usually wants a safe choice">Safe choices</button>
-    <button type="button" class="suggestion-chip" data-value="Enjoys sharing several dishes">Likes sharing</button>
-  </div>
-</div>
       </section>
 
       <div class="onboarding-actions">
