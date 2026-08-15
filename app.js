@@ -391,7 +391,11 @@ async function ensureDiscoveredRestaurantSaved(){
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
   if(existing)return existing;
   const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,website_url:safeUrl(r.menuUrl||r.website)||null,website_link_type:r.menuUrl?"menu":"restaurant",google_maps_url:safeUrl(r.googleMapsUrl)||null,favorite:false,user_id:currentUser.id};
-  const {data:created,error}=await sb.from("restaurants").insert(payload).select("*").single();
+  let {data:created,error}=await sb.from("restaurants").insert(payload).select("*").single();
+  if(error&&isMissingColumnError(error,"website_link_type")){
+    const legacyPayload={...payload};delete legacyPayload.website_link_type;
+    ({data:created,error}=await sb.from("restaurants").insert(legacyPayload).select("*").single());
+  }
   if(error)throw error;
   return {...created,items:[]};
 }
@@ -407,7 +411,9 @@ async function saveTopPicks(saveAll=false){
     const existingNames=new Set((restaurant.items||[]).map(item=>item.name.toLowerCase()));
     const newPicks=selected.filter(pick=>!existingNames.has((pick.name||"").toLowerCase()));
     if(newPicks.length){
-      const {error}=await sb.from("orders").insert(newPicks.map(pick=>({restaurant_id:restaurant.id,name:pick.name,description:pick.description||pick.reason||null,item_url:safeUrl(pick.itemUrl||pick.item_url)||null,item_link_type:safeUrl(pick.itemUrl||pick.item_url)?"item":null,notes:pick.reason?`Why it fits you: ${pick.reason}`:null})));
+      const rows=newPicks.map(pick=>({restaurant_id:restaurant.id,name:pick.name,description:pick.description||pick.reason||null,item_url:safeUrl(pick.itemUrl||pick.item_url)||null,item_link_type:safeUrl(pick.itemUrl||pick.item_url)?"item":null,notes:pick.reason?`Why it fits you: ${pick.reason}`:null}));
+      let {error}=await sb.from("orders").insert(rows);
+      if(error&&isMissingColumnError(error,"item_link_type"))({error}=await sb.from("orders").insert(rows.map(row=>{const legacy={...row};delete legacy.item_link_type;return legacy;})));
       if(error)throw error;
     }
     await loadData();render();renderTopPicks(currentTopPicks);
@@ -566,7 +572,7 @@ $("editModeBtn").addEventListener("click", async () => {
     if (selectedRestaurantId) renderRestaurantSheet();
     showToast("Edit mode off");
   } else {
-    $("adminEmailLabel").textContent = currentUser.email || "Signed in";
+    $("adminEmailLabel").textContent = currentUser.email || currentUser.phone || "Signed in";
     $("adminDialog").showModal();
   }
 });
@@ -627,7 +633,14 @@ $("restaurantForm").addEventListener("submit", async e => {
     ({ error } = await sb.from("restaurants").insert(payload));
   }
 
-  if (error) return showToast("Couldn't save restaurant.");
+  if (error && isMissingColumnError(error, "website_link_type")) {
+    const legacyPayload = { ...payload };
+    delete legacyPayload.website_link_type;
+    if (editingRestaurantId) ({ error } = await sb.from("restaurants").update(legacyPayload).eq("id", editingRestaurantId));
+    else ({ error } = await sb.from("restaurants").insert(legacyPayload));
+  }
+
+  if (error) { console.error("Restaurant save failed:", error); return showToast(`Couldn't save restaurant: ${error.message || "Database error"}`); }
   $("editRestaurantDialog").close();
   await loadData();
   render();
@@ -657,6 +670,12 @@ $("itemForm").addEventListener("submit", async e => {
     }));
   }
 
+  if(error&&isMissingColumnError(error,"item_link_type")){
+    const legacy={name,notes,description,item_url,rating};
+    if(editingItemId)({error}=await sb.from("orders").update(legacy).eq("id",editingItemId));
+    else({error}=await sb.from("orders").insert({restaurant_id:selectedRestaurantId,...legacy}));
+  }
+
   if (error) return showToast("Couldn't save order.");
   $("editItemDialog").close();
   await loadData();
@@ -684,7 +703,7 @@ $("findItemDetailsBtn").addEventListener("click", async () => {
     if(result.description)$("itemDescriptionInput").value=result.description;
     if(safeUrl(result.url)){$("itemUrlInput").value=safeUrl(result.url);$("itemLinkTypeInput").value=["item","menu","restaurant"].includes(result.linkType)?result.linkType:"restaurant";}
     const label=result.linkType==="item"?"direct item link":result.linkType==="menu"?"full menu link":"restaurant website";
-    status.textContent=`✓ Details found${result.url?` with a ${label}`:""}. Review before saving.`;
+    status.textContent=result.foundOnMenu?`✓ Exact menu details found${result.url?` with a ${label}`:""}. Review before saving.`:`The exact item description wasn't available in the readable menu. ${result.url?`Added the best available ${label}.`:"You can enter details manually."}`;
   }catch(error){console.error(error);status.textContent=error.message||"Couldn't find item details.";}
   finally{button.disabled=false;button.textContent="✨ Find item details";}
 });
@@ -847,6 +866,11 @@ function safeUrl(value = "") {
   } catch { return ""; }
 }
 
+function isMissingColumnError(error, column) {
+  const message = `${error?.message || ""} ${error?.details || ""}`.toLowerCase();
+  return message.includes(column.toLowerCase()) && (message.includes("column") || message.includes("schema cache"));
+}
+
 function ratingStars(value) {
   const rating = Math.round(Number(value));
   if (rating < 1 || rating > 5) return "";
@@ -879,7 +903,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=23"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=26"));
 }
 
 
@@ -895,7 +919,7 @@ async function ensureProfile() {
   if (!existing) {
     await sb.from("profiles").insert({
       user_id: currentUser.id,
-      display_name: currentUser.user_metadata?.display_name || currentUser.email?.split("@")[0] || "User",
+      display_name: currentUser.user_metadata?.display_name || currentUser.email?.split("@")[0] || currentUser.phone || "User",
       onboarding_complete: false
     });
   }
@@ -925,6 +949,7 @@ function openAuthDialog(mode = "signup") {
   $("authTitle").textContent = signup ? "Welcome to My Usual" : "Welcome back";
   $("displayNameLabel").classList.toggle("hidden", !signup);
   $("authSubmitBtn").textContent = signup ? "Create account" : "Sign in";
+  $("authSwitchBtn").classList.remove("hidden");
   $("authSwitchBtn").textContent = signup
     ? "Already have an account? Sign in"
     : "New here? Create an account";
@@ -1026,7 +1051,7 @@ function openAccountDialog() {
     openAuthDialog("signin");
     return;
   }
-  $("accountEmail").textContent = currentUser.email || "";
+  $("accountEmail").textContent = currentUser.phone || currentUser.email || "";
   $("accountDialog").showModal();
 }
 
@@ -1051,52 +1076,13 @@ window.addEventListener("DOMContentLoaded", () => {
     const errorBox = $("authError");
     errorBox.classList.add("hidden");
 
-    if (authMode === "signup") {
-      const { data: authData, error } = await sb.auth.signUp({
-        email,
-        password,
-        options: { data: { display_name: displayName || email.split("@")[0] } }
-      });
+    let authData,error;
+    if(authMode==="signup")({data:authData,error}=await sb.auth.signUp({email,password,options:{data:{display_name:displayName||email.split("@")[0]}}}));
+    else({data:authData,error}=await sb.auth.signInWithPassword({email,password}));
 
-      if (error) {
-        errorBox.textContent = error.message;
-        errorBox.classList.remove("hidden");
-        setLoading(false);
-        return;
-      }
-
-      if (!authData.session) {
-        errorBox.textContent = "Check your email to confirm your account, then come back and sign in.";
-        errorBox.classList.remove("hidden");
-        setLoading(false);
-        return;
-      }
-
-      currentUser = authData.user;
-      isAdmin = true;
-      await ensureProfile();
-      $("authDialog").close();
-      await loadData();
-      render();
-      await maybeStartOnboarding();
-    } else {
-      const { data: authData, error } = await sb.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        errorBox.textContent = "That email or password didn't work.";
-        errorBox.classList.remove("hidden");
-        setLoading(false);
-        return;
-      }
-
-      currentUser = authData.user;
-      isAdmin = true;
-      await ensureProfile();
-      $("authDialog").close();
-      await loadData();
-      render();
-      await maybeStartOnboarding();
-    }
+    if(error){errorBox.textContent=error.message;errorBox.classList.remove("hidden");setLoading(false);return;}
+    if(authMode==="signup"&&!authData.session){errorBox.textContent="Check your email to confirm your account, then come back and sign in.";errorBox.classList.remove("hidden");setLoading(false);return;}
+    currentUser=authData.user;isAdmin=true;await ensureProfile();$("authDialog").close();await loadData();render();await maybeStartOnboarding();
     setLoading(false);
   });
 

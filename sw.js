@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v23-item-lookup";
-const ASSETS = ["./", "./index.html", "./styles.css?v=23", "./app.js?v=23", "./manifest.webmanifest?v=23", "./icon-192.png?v=23", "./icon-512.png?v=23"];
+const CACHE = "my-usual-v26-email-auth";
+const ASSETS = ["./", "./index.html", "./styles.css?v=26", "./app.js?v=26", "./manifest.webmanifest?v=26", "./icon-192.png?v=26", "./icon-512.png?v=26"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
