@@ -265,6 +265,7 @@ function openItemForm(id = null) {
 
 
 function openDiscover(){
+  invalidateTopPicks();
   $("discoverStatus").textContent="";
   $("discoverResults").innerHTML="";
   $("restaurantSearchInput").value="";
@@ -276,6 +277,7 @@ function showRestaurantSearchLoading(){
   $("discoverResults").innerHTML=`<div class="restaurant-search-loading"><div class="searching-icon-row"><span>📍</span><span>🍽️</span></div><strong>Looking around the neighborhood</strong><div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div><div class="result-skeletons" aria-hidden="true"><i></i><i></i><i></i></div></div>`;
 }
 async function searchRestaurants(suggestion=""){
+  invalidateTopPicks();
   const search=$("restaurantSearchInput").value.trim();
   const zip=$("restaurantZipInput").value.trim();
   if(!/^\d{5}$/.test(zip)){$("discoverStatus").textContent="Enter a valid 5-digit ZIP code.";$("restaurantZipInput").focus();return;}
@@ -308,6 +310,15 @@ function resetTopPicks(){
   $("topPicksStatus").innerHTML="";
   $("topPicksActions").classList.add("hidden");
   $("retryTopPicksBtn").classList.add("hidden");
+  $("newRestaurantPickResult")?.classList.add("hidden");
+  if ($("newRestaurantPickResult")) $("newRestaurantPickResult").innerHTML="";
+}
+
+function invalidateTopPicks(){
+  topPicksRequestId++;
+  currentTopPicks=[];
+  selectedDiscoveredRestaurant=null;
+  resetTopPicks();
 }
 
 function showTopPicksMessage(message, action=""){
@@ -337,6 +348,28 @@ function renderTopPicks(picks){
       </div>
     </li>`).join("");
   $("topPicksActions").classList.toggle("hidden",picks.every(pick=>savedNames.has((pick.name||"").toLowerCase())));
+}
+
+async function pickFromNewRestaurant(){
+  if(!currentTopPicks.length)return showToast("Top 5 picks are still loading.");
+  const button=$("pickNewRestaurantBtn");
+  const result=$("newRestaurantPickResult");
+  button.disabled=true;
+  result.classList.remove("hidden","revealed");
+  result.innerHTML=`<div class="pick-spinner"><span>🍜</span><span>🥟</span><span>🍕</span></div><strong>Choosing from the Top 5…</strong>`;
+  for(let i=0;i<9;i++){
+    const preview=currentTopPicks[i%currentTopPicks.length];
+    result.querySelector("strong").textContent=`${foodEmoji(preview.name)} ${preview.name}`;
+    await new Promise(resolve=>setTimeout(resolve,80+i*16));
+  }
+  const available=currentTopPicks.map((pick,index)=>({pick,index})).filter(({index})=>!document.querySelector(`[data-pick-index="${index}"]`)?.disabled);
+  const choice=(available.length?available:currentTopPicks.map((pick,index)=>({pick,index})))[Math.floor(Math.random()*(available.length||currentTopPicks.length))];
+  document.querySelectorAll("[data-pick-index]").forEach(input=>{if(!input.disabled)input.checked=Number(input.dataset.pickIndex)===choice.index;});
+  const pick=choice.pick;
+  const link=safeUrl(pick.itemUrl||pick.item_url);
+  result.innerHTML=`<p class="eyebrow">✨ Your pick is</p><h3>${foodEmoji(pick.name)} ${link?`<a class="saved-link" href="${escapeHtml(link)}" target="_blank" rel="noopener">${escapeHtml(pick.name)} ↗</a>`:escapeHtml(pick.name)}</h3>${pick.description?`<p>${escapeHtml(pick.description)}</p>`:""}<p>${escapeHtml(pick.reason||"")}</p>`;
+  result.classList.add("revealed");
+  button.disabled=false;
 }
 
 async function ensureDiscoveredRestaurantSaved(){
@@ -706,9 +739,9 @@ sb.auth.onAuthStateChange(async (_event, session) => {
 
 
 $("openDiscoverBtn").addEventListener("click",openDiscover);
-$("closeDiscoverBtn").addEventListener("click",()=>$("discoverDialog").close());
-$("closeDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRestaurantDialog").close();$("discoverDialog").showModal();});
-$("dismissDiscoveredRestaurantBtn").addEventListener("click",()=>$("discoveredRestaurantDialog").close());
+$("closeDiscoverBtn").addEventListener("click",()=>{$("discoverDialog").close();invalidateTopPicks();});
+$("closeDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRestaurantDialog").close();invalidateTopPicks();$("discoverDialog").showModal();});
+$("dismissDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRestaurantDialog").close();invalidateTopPicks();});
 $("restaurantSearchBtn").addEventListener("click",()=>searchRestaurants());
 $("restaurantSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
 $("restaurantZipInput").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,5);});
@@ -719,6 +752,7 @@ $("saveDiscoveredRestaurantBtn").addEventListener("click",saveDiscoveredRestaura
 $("saveSelectedPicksBtn").addEventListener("click",()=>saveTopPicks(false));
 $("saveAllPicksBtn").addEventListener("click",()=>saveTopPicks(true));
 $("retryTopPicksBtn").addEventListener("click",loadTopPicks);
+$("pickNewRestaurantBtn").addEventListener("click",pickFromNewRestaurant);
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, c => ({

@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v15-delete-favorites";
-const ASSETS = ["./", "./index.html", "./styles.css?v=15", "./app.js?v=15", "./manifest.webmanifest?v=15", "./icon-192.png?v=15", "./icon-512.png?v=15"];
+const CACHE = "my-usual-v16-isolated-picks";
+const ASSETS = ["./", "./index.html", "./styles.css?v=16", "./app.js?v=16", "./manifest.webmanifest?v=16", "./icon-192.png?v=16", "./icon-512.png?v=16"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
