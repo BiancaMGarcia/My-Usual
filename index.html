@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=13" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=13" />
-  <link rel="stylesheet" href="styles.css?v=13" />
+  <link rel="manifest" href="manifest.webmanifest?v=15" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=15" />
+  <link rel="stylesheet" href="styles.css?v=15" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=13" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=15" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -76,6 +76,7 @@
       </div>
 
       <button id="pickForMeBtn" class="primary-btn">🎲 Pick for me</button>
+      <div id="pickForMeResult" class="pick-result-card hidden" role="status" aria-live="polite"></div>
       <div id="savedRestaurantLinks" class="external-actions compact-links hidden">
         <a id="savedRestaurantMenuLink" class="primary-btn link-btn" target="_blank" rel="noopener">View Menu / Website ↗</a>
         <a id="savedRestaurantMapsLink" class="secondary-btn link-btn" target="_blank" rel="noopener">Open in Google Maps ↗</a>
@@ -86,6 +87,7 @@
         <button id="addItemBtn" class="text-btn hidden">+ Add item</button>
       </div>
       <div id="orderList" class="order-list"></div>
+      <button id="deleteRestaurantBtn" class="danger-btn full-btn hidden" type="button">🗑️ Delete restaurant</button>
     </div>
   </dialog>
 
@@ -187,9 +189,9 @@
   <dialog id="discoveredRestaurantDialog" class="sheet">
     <div class="sheet-inner">
       <div class="sheet-head">
-        <button id="closeDiscoveredRestaurantBtn" class="icon-btn" aria-label="Close">×</button>
+        <button id="closeDiscoveredRestaurantBtn" class="icon-btn" aria-label="Back to search results">←</button>
         <div><p id="discoveredType" class="eyebrow">Restaurant</p><h2 id="discoveredName"></h2></div>
-        <div class="spacer-icon"></div>
+        <button id="dismissDiscoveredRestaurantBtn" class="icon-btn" aria-label="Close">×</button>
       </div>
       <p id="discoveredAddress" class="detail-address"></p>
       <div class="external-actions">
@@ -314,7 +316,7 @@
 
   <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true">
     <div class="loading-card">
-      <img src="icon-192.png?v=13" alt="" />
+      <img src="icon-192.png?v=15" alt="" />
       <div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
       <p id="loadingMessage">Just a moment…</p>
     </div>
@@ -349,6 +351,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>

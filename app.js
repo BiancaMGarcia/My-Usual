@@ -91,8 +91,9 @@ async function loadData() {
       description: o.description || "",
       item_url: o.item_url || "",
       rating: o.rating || null,
+      favorite: !!o.favorite,
       sort_order: o.sort_order || 0
-    }))
+    })).sort((a,b) => Number(b.favorite)-Number(a.favorite) || (a.sort_order||0)-(b.sort_order||0) || a.name.localeCompare(b.name))
   }));
   setLoading(false);
 }
@@ -134,11 +135,12 @@ function render() {
 }
 
 function restaurantCard(r) {
+  const emoji = foodEmoji(r.name, r.category);
   return `
     <button class="restaurant-card" data-restaurant-id="${r.id}">
       <div class="row">
         <div>
-          <strong>${escapeHtml(r.name)}</strong>
+          <strong>${emoji} ${escapeHtml(r.name)}</strong>
           <div class="meta">${escapeHtml(r.category)}${r.location ? ` · ${escapeHtml(r.location)}` : ""}</div>
           ${ratingStars(r.rating)}
         </div>
@@ -166,6 +168,9 @@ function renderRestaurantSheet() {
   $("favoriteBtn").disabled = !currentUser;
   $("favoriteBtn").style.opacity = (!currentUser) ? ".45" : "1";
   $("addItemBtn").classList.toggle("hidden", !currentUser);
+  $("deleteRestaurantBtn").classList.toggle("hidden", !currentUser);
+  $("pickForMeResult").classList.add("hidden");
+  $("pickForMeResult").innerHTML = "";
   const menuLink = $("savedRestaurantMenuLink");
   const mapsLink = $("savedRestaurantMapsLink");
   menuLink.classList.toggle("hidden", !website); if (website) menuLink.href = website;
@@ -173,16 +178,17 @@ function renderRestaurantSheet() {
   $("savedRestaurantLinks").classList.toggle("hidden", !website && !maps);
 
   $("orderList").innerHTML = r.items.length ? r.items.map(item => `
-    <div class="order-card">
-      <div class="order-title">${safeUrl(item.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(item.item_url))}" target="_blank" rel="noopener">${escapeHtml(item.name)} ↗</a>` : escapeHtml(item.name)}</div>
+    <div class="order-card ${item.favorite ? "favorite-item" : ""}">
+      <div class="order-title">${foodEmoji(item.name)} ${safeUrl(item.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(item.item_url))}" target="_blank" rel="noopener">${escapeHtml(item.name)} ↗</a>` : escapeHtml(item.name)}</div>
       ${item.description ? `<div class="order-description">${escapeHtml(item.description)}</div>` : ""}
       ${item.notes ? `<div class="order-notes">${escapeHtml(item.notes)}</div>` : ""}
       ${ratingStars(item.rating)}
       <div class="order-actions">
+        ${currentUser ? `<button class="small-btn favorite-item-btn" data-favorite-item="${item.id}">${item.favorite ? "⭐ Favorited" : "☆ Favorite"}</button>` : ""}
         <button class="copy-btn" data-copy-item="${item.id}">📋 Copy order</button>
-        ${editMode && isAdmin ? `
+        ${currentUser ? `
           <button class="small-btn" data-edit-item="${item.id}">Edit</button>
-          <button class="small-btn" data-delete-item="${item.id}">Delete</button>` : ""}
+          <button class="small-btn danger-text" data-delete-item="${item.id}">Delete</button>` : ""}
       </div>
     </div>`).join("") : `<div class="empty">No saved orders yet.</div>`;
 
@@ -193,9 +199,7 @@ function renderRestaurantSheet() {
 }
 
 async function copyOrder(item) {
-  const r = data.find(x => x.id === selectedRestaurantId);
-  if (!r) return;
-  const text = `${r.name} — ${item.name}${item.notes ? ` — ${item.notes}` : ""}`;
+  const text = item.name;
 
   try {
     await navigator.clipboard.writeText(text);
@@ -207,14 +211,27 @@ async function copyOrder(item) {
     document.execCommand("copy");
     box.remove();
   }
-  showToast("Copied! Paste it into your text.");
+  showToast("Dish name copied!");
 }
 
-function pickForMe() {
+async function pickForMe() {
   const r = data.find(x => x.id === selectedRestaurantId);
   if (!r || !r.items.length) return showToast("No saved orders yet.");
+  const button = $("pickForMeBtn");
+  const result = $("pickForMeResult");
+  button.disabled = true;
+  result.classList.remove("hidden", "revealed");
+  result.innerHTML = `<div class="pick-spinner"><span>🍜</span><span>🥟</span><span>🍕</span></div><strong>Choosing from your usuals…</strong>`;
+  for (let i = 0; i < 8; i++) {
+    const preview = r.items[i % r.items.length];
+    result.querySelector("strong").textContent = `${foodEmoji(preview.name)} ${preview.name}`;
+    await new Promise(resolve => setTimeout(resolve, 85 + i * 18));
+  }
   const item = r.items[Math.floor(Math.random() * r.items.length)];
-  showToast(`Try: ${item.name}`);
+  const url = safeUrl(item.item_url);
+  result.innerHTML = `<p class="eyebrow">✨ Your pick is</p><h3>${foodEmoji(item.name)} ${url ? `<a class="saved-link" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(item.name)} ↗</a>` : escapeHtml(item.name)}</h3>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}${item.notes ? `<p class="order-notes">${escapeHtml(item.notes)}</p>` : ""}${ratingStars(item.rating)}`;
+  result.classList.add("revealed");
+  button.disabled = false;
 }
 
 function openRestaurantForm(id = null) {
@@ -271,12 +288,12 @@ async function searchRestaurants(suggestion=""){
     if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";$("discoverResults").innerHTML="";return;}
     discoveredRestaurants=result.restaurants||[];
     $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found near ${zip}`:"No restaurants found in that area. Try another search.";
-    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>`<button class="discover-result" data-discovered-index="${index}"><strong>${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(r.type||"Restaurant")}</div><div class="meta">${escapeHtml(r.address||"")}</div></button>`).join("");
+    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>`<button class="discover-result" data-discovered-index="${index}"><strong>${foodEmoji(r.name,r.type)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(r.type||"Restaurant")}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button>`).join("");
   }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";$("discoverResults").innerHTML="";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
 }
 function openDiscoveredRestaurant(index){
   selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
-  $("discoveredName").textContent=r.name||"Restaurant";$("discoveredType").textContent=r.type||"Restaurant";$("discoveredAddress").textContent=r.address||"";
+  $("discoveredName").textContent=`${foodEmoji(r.name,r.type)} ${r.name||"Restaurant"}`;$("discoveredType").textContent=r.type||"Restaurant";$("discoveredAddress").textContent=r.address?`📍 ${r.address}`:"";
   const menu=$("viewMenuBtn"); if(r.website){menu.href=r.website;menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
   const maps=$("viewMapsBtn"); if(r.googleMapsUrl){maps.href=r.googleMapsUrl;maps.classList.remove("hidden");}else{maps.classList.add("hidden");}
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
@@ -313,7 +330,7 @@ function renderTopPicks(picks){
     <li class="top-pick-item ${savedNames.has((pick.name||"").toLowerCase())?"is-saved":""}">
       <label class="top-pick-choice"><input type="checkbox" data-pick-index="${index}" ${savedNames.has((pick.name||"").toLowerCase())?"disabled":"checked"} /><span class="top-pick-rank">${Number(pick.rank)||index+1}</span></label>
       <div class="top-pick-copy">
-        <strong>${safeUrl(pick.itemUrl||pick.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(pick.itemUrl||pick.item_url))}" target="_blank" rel="noopener">${escapeHtml(pick.name||"Menu pick")} ↗</a>` : escapeHtml(pick.name||"Menu pick")}</strong>
+        <strong>${foodEmoji(pick.name)} ${safeUrl(pick.itemUrl||pick.item_url) ? `<a class="saved-link" href="${escapeHtml(safeUrl(pick.itemUrl||pick.item_url))}" target="_blank" rel="noopener">${escapeHtml(pick.name||"Menu pick")} ↗</a>` : escapeHtml(pick.name||"Menu pick")}</strong>
         ${pick.description?`<p class="pick-description">${escapeHtml(pick.description)}</p>`:""}
         <p>${escapeHtml(pick.reason||"A strong match for your taste profile.")}</p>
         ${savedNames.has((pick.name||"").toLowerCase())?`<span class="top-pick-saved">✓ Saved</span>`:""}
@@ -453,6 +470,17 @@ document.addEventListener("click", async e => {
     showToast("Order deleted");
   }
 
+  const favoriteItem = e.target.closest("[data-favorite-item]");
+  if (favoriteItem && currentUser) {
+    const restaurant = data.find(x => x.id === selectedRestaurantId);
+    const item = restaurant?.items.find(x => x.id === favoriteItem.dataset.favoriteItem);
+    if (!item) return;
+    const { error } = await sb.from("orders").update({ favorite: !item.favorite }).eq("id", item.id);
+    if (error) return showToast("Couldn't update item favorite.");
+    await loadData(); render(); renderRestaurantSheet();
+    showToast(item.favorite ? "Removed from favorites" : "Item favorited ⭐");
+  }
+
   if (e.target.id === "editRestaurantInside") openRestaurantForm(selectedRestaurantId);
 });
 
@@ -480,6 +508,23 @@ $("addRestaurantBtn").addEventListener("click", () => openRestaurantForm());
 $("addItemBtn").addEventListener("click", () => openItemForm());
 $("closeRestaurantBtn").addEventListener("click", () => $("restaurantDialog").close());
 $("pickForMeBtn").addEventListener("click", pickForMe);
+
+$("deleteRestaurantBtn").addEventListener("click", async () => {
+  if (!currentUser) return;
+  const restaurant = data.find(x => x.id === selectedRestaurantId);
+  if (!restaurant || !confirm(`Delete ${restaurant.name} and all of its saved items?`)) return;
+  setLoading(true, "Deleting restaurant…");
+  try {
+    const { error: itemsError } = await sb.from("orders").delete().eq("restaurant_id", restaurant.id);
+    if (itemsError) throw itemsError;
+    const { error } = await sb.from("restaurants").delete().eq("id", restaurant.id);
+    if (error) throw error;
+    $("restaurantDialog").close(); selectedRestaurantId = null;
+    await loadData(); render(); showToast("Restaurant deleted");
+  } catch (error) {
+    console.error(error); showToast(`Couldn't delete restaurant: ${error.message || "Unknown database error"}`);
+  } finally { setLoading(false); }
+});
 
 $("favoriteBtn").addEventListener("click", async () => {
   if (!currentUser) return;
@@ -662,7 +707,8 @@ sb.auth.onAuthStateChange(async (_event, session) => {
 
 $("openDiscoverBtn").addEventListener("click",openDiscover);
 $("closeDiscoverBtn").addEventListener("click",()=>$("discoverDialog").close());
-$("closeDiscoveredRestaurantBtn").addEventListener("click",()=>$("discoveredRestaurantDialog").close());
+$("closeDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRestaurantDialog").close();$("discoverDialog").showModal();});
+$("dismissDiscoveredRestaurantBtn").addEventListener("click",()=>$("discoveredRestaurantDialog").close());
 $("restaurantSearchBtn").addEventListener("click",()=>searchRestaurants());
 $("restaurantSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
 $("restaurantZipInput").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,5);});
@@ -691,6 +737,20 @@ function ratingStars(value) {
   const rating = Math.round(Number(value));
   if (rating < 1 || rating > 5) return "";
   return `<div class="rating-stars" aria-label="${rating} out of 5 stars">${"★".repeat(rating)}${"☆".repeat(5-rating)}</div>`;
+}
+
+function foodEmoji(name = "", category = "") {
+  const text = `${name} ${category}`.toLowerCase();
+  const choices = [
+    [/shrimp|prawn/, "🍤"], [/calamari|squid|seafood|fish/, "🐟"], [/sushi|sashimi|poke/, "🍣"],
+    [/ramen|noodle|udon|pho|pasta|spaghetti/, "🍜"], [/dumpling|bao|gyoza|wonton/, "🥟"],
+    [/pizza/, "🍕"], [/burger|sandwich/, "🍔"], [/taco|burrito|mexican/, "🌮"],
+    [/soup|stew/, "🥣"], [/rice|fried rice/, "🍚"], [/chicken|wing/, "🍗"],
+    [/beef|steak/, "🥩"], [/pork|bacon/, "🥓"], [/salad|vegetable|vegan/, "🥗"],
+    [/coffee|cafe/, "☕"], [/cake|dessert|bakery|sweet/, "🍰"], [/ice cream|gelato/, "🍨"],
+    [/breakfast|brunch|egg/, "🍳"], [/asian|chinese|taiwanese/, "🥢"], [/italian/, "🇮🇹"]
+  ];
+  return choices.find(([pattern]) => pattern.test(text))?.[1] || "🍽️";
 }
 
 init();
