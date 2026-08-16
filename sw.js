@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v33-accurate-search";
-const ASSETS = ["./", "./index.html", "./styles.css?v=33", "./app.js?v=33", "./manifest.webmanifest?v=33", "./icon-192.png?v=33", "./icon-512.png?v=33", "./avatar-husky-blue.png?v=33", "./avatar-brown-peach.png?v=33", "./avatar-samoyed-lavender.png?v=33", "./avatar-white-mint.png?v=33", "./avatar-spitz-pink.png?v=33", "./avatar-shepherd-yellow.png?v=33"];
+const CACHE = "my-usual-v35-preferences-yelp";
+const ASSETS = ["./", "./index.html", "./styles.css?v=35", "./app.js?v=35", "./manifest.webmanifest?v=35", "./icon-192.png?v=35", "./icon-512.png?v=35", "./avatar-husky-blue.png?v=35", "./avatar-brown-peach.png?v=35", "./avatar-samoyed-lavender.png?v=35", "./avatar-white-mint.png?v=35", "./avatar-spitz-pink.png?v=35", "./avatar-shepherd-yellow.png?v=35"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

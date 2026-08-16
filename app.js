@@ -223,7 +223,7 @@ function renderRestaurantSheet() {
     <div class="order-card ${item.favorite ? "favorite-item" : ""}">
       <div class="order-title">${foodEmoji(item.name)} ${escapeHtml(item.name)}</div>
       ${item.description ? `<div class="order-description">${escapeHtml(item.description)}</div>` : ""}
-      ${item.notes ? `<div class="order-notes">${escapeHtml(item.notes)}</div>` : ""}
+      ${item.notes ? `<div class="order-notes"><strong>Preferences:</strong> ${escapeHtml(item.notes)}</div>` : ""}
       ${ratingStars(item.rating)}
       ${safeUrl(item.item_url)?`<a class="small-btn saved-item-link" href="${escapeHtml(safeUrl(item.item_url))}" target="_blank" rel="noopener">${itemLinkLabel(item.item_link_type)} ↗</a>`:""}
       <div class="order-actions">
@@ -390,7 +390,7 @@ async function searchRestaurants(suggestion=""){
     if(!response.ok){console.error(result);$("discoverStatus").textContent="Restaurant search failed. Try again.";$("discoverResults").innerHTML="";return;}
     discoveredRestaurants=result.restaurants||[];
     $("discoverStatus").textContent=discoveredRestaurants.length?`${discoveredRestaurants.length} restaurant${discoveredRestaurants.length===1?"":"s"} found within ${radiusMiles} miles of ${zip}`:`No restaurants found within ${radiusMiles} miles. Try expanding the radius.`;
-    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>{const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";const distance=Number(r.distanceMiles)>0?` · about ${Number(r.distanceMiles).toFixed(1)} mi`:"";return `<button class="discover-result" data-discovered-index="${index}"><strong>${foodEmoji(r.name,kind)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(kind)}${distance}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button>`;}).join("");
+    $("discoverResults").innerHTML=discoveredRestaurants.map((r,index)=>{const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";const distance=Number(r.distanceMiles)>0?` · about ${Number(r.distanceMiles).toFixed(1)} mi`:"";const yelp=yelpSearchUrl(r.name,r.address);return `<div class="discover-result"><button type="button" class="discover-result-main" data-discovered-index="${index}"><strong>${foodEmoji(r.name,kind)} ${escapeHtml(r.name)}</strong><div class="meta">${escapeHtml(kind)}${distance}</div><div class="meta">📍 ${escapeHtml(r.address||"")}</div></button><a class="discover-yelp-link" href="${escapeHtml(yelp)}" target="_blank" rel="noopener">⭐ Check Yelp ratings ↗</a></div>`;}).join("");
   }catch(error){console.error(error);$("discoverStatus").textContent="Couldn't reach restaurant search.";$("discoverResults").innerHTML="";}finally{$("restaurantSearchBtn").disabled=false;$("restaurantSearchBtn").textContent="Find Restaurants";}
 }
 function updateRestaurantRadiusLabel(){
@@ -400,8 +400,10 @@ function updateRestaurantRadiusLabel(){
 function openDiscoveredRestaurant(index){
   selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
   const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";$("discoveredName").textContent=`${foodEmoji(r.name,kind)} ${r.name||"Restaurant"}`;$("discoveredType").textContent=kind;$("discoveredAddress").textContent=r.address?`📍 ${r.address}`:"";
-  const menu=$("viewMenuBtn"); const initialMenu=safeUrl(r.menuUrl||r.website); if(initialMenu){menu.href=initialMenu;menu.textContent=r.menuUrl?"View Menu ↗":"View Website / Find Menu ↗";menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
+  const menu=$("viewMenuBtn"); const menuUrl=safeUrl(r.menuUrl); if(menuUrl){menu.href=menuUrl;menu.textContent="📖 View menu ↗";menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
+  const website=$("viewRestaurantBtn"); const websiteUrl=safeUrl(r.website); if(websiteUrl){website.href=websiteUrl;website.textContent="🌐 Restaurant website ↗";website.classList.remove("hidden");}else{website.classList.add("hidden");}
   const maps=$("viewMapsBtn"); if(r.googleMapsUrl){maps.href=r.googleMapsUrl;maps.classList.remove("hidden");}else{maps.classList.add("hidden");}
+  const yelp=$("viewYelpBtn");yelp.href=yelpSearchUrl(r.name,r.address);yelp.classList.remove("hidden");
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
   $("saveDiscoveredRestaurantBtn").textContent=existing?"✓ Already in My Usual":"＋ Save to My Usual";$("saveDiscoveredRestaurantBtn").disabled=!!existing;
   $("discoverDialog").close();$("discoveredRestaurantDialog").showModal();
@@ -557,7 +559,7 @@ async function loadTopPicks(){
     if(!Array.isArray(result.picks)||!result.picks.length)throw new Error("No menu recommendations were found.");
     if(result.menuUrl&&selectedDiscoveredRestaurant){
       selectedDiscoveredRestaurant.menuUrl=safeUrl(result.menuUrl);
-      if(selectedDiscoveredRestaurant.menuUrl){$("viewMenuBtn").href=selectedDiscoveredRestaurant.menuUrl;$("viewMenuBtn").textContent="View Menu ↗";}
+      if(selectedDiscoveredRestaurant.menuUrl){$("viewMenuBtn").href=selectedDiscoveredRestaurant.menuUrl;$("viewMenuBtn").textContent="📖 View menu ↗";$("viewMenuBtn").classList.remove("hidden");}
     }
     renderTopPicks(result.picks.slice(0,5));
   }catch(error){
@@ -567,6 +569,7 @@ async function loadTopPicks(){
   }
 }
 function extractLocationFromAddress(address=""){const parts=address.split(",").map(x=>x.trim()).filter(Boolean);return parts.length>=3?parts[parts.length-3]:"";}
+function yelpSearchUrl(name="",location=""){return `https://www.yelp.com/search?find_desc=${encodeURIComponent(name||"Restaurant")}&find_loc=${encodeURIComponent(location||"")}`;}
 async function saveDiscoveredRestaurant(){
   if(!selectedDiscoveredRestaurant)return;
   if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Sign in to save restaurants.");return;}
@@ -1014,7 +1017,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=33"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=35"));
 }
 
 

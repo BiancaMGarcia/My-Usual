@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=33" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=33" />
-  <link rel="stylesheet" href="styles.css?v=33" />
+  <link rel="manifest" href="manifest.webmanifest?v=35" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=35" />
+  <link rel="stylesheet" href="styles.css?v=35" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=33" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=35" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -158,8 +158,8 @@
         <select id="itemLinkTypeInput"><option value="item">This specific item</option><option value="menu">The full menu</option><option value="restaurant">The restaurant website</option></select>
       </label>
       <label>
-        Customizations / notes
-        <textarea id="itemNotesInput" rows="3" placeholder="No onions, sauce on the side"></textarea>
+        Additional details / preferences <span class="muted">(optional)</span>
+        <textarea id="itemNotesInput" rows="4" placeholder="No onions, sauce on the side, extra spicy, size, sweetness, toppings, or anything you want to remember"></textarea>
       </label>
       <label>Your rating <span class="muted">(optional)</span>
         <select id="itemRatingInput"><option value="">Not rated</option><option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option></select>
@@ -228,8 +228,10 @@
       </div>
       <p id="discoveredAddress" class="detail-address"></p>
       <div class="external-actions">
-        <a id="viewMenuBtn" class="primary-btn link-btn" target="_blank" rel="noopener">View Menu / Website ↗</a>
+        <a id="viewMenuBtn" class="primary-btn link-btn hidden" target="_blank" rel="noopener">📖 View menu ↗</a>
+        <a id="viewRestaurantBtn" class="secondary-btn link-btn hidden" target="_blank" rel="noopener">🌐 Restaurant website ↗</a>
         <a id="viewMapsBtn" class="secondary-btn link-btn" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+        <a id="viewYelpBtn" class="secondary-btn link-btn" target="_blank" rel="noopener">⭐ Check Yelp ratings ↗</a>
       </div>
       <section class="top-picks-card">
         <div class="section-head"><h3>✨ Top 5 Picks for You</h3></div>
@@ -391,6 +393,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=33"></script>
+  <script src="app.js?v=35"></script>
 </body>
 </html>
