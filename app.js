@@ -498,7 +498,8 @@ function invalidateTopPicks(){
 
 function showTopPicksMessage(message, action=""){
   const existingMenuUrl=safeUrl(selectedDiscoveredRestaurant?.menuUrl||"");
-  const menuHelp=/menu|recommendation|verif/i.test(message)?`<div class="empty top-picks-link-help"><strong>A menu link may help.</strong><p>Paste the restaurant's full menu link below and My Usual will try the recommendations again.</p><label class="inline-menu-link-label">Menu link<input id="topPicksMenuLinkInput" type="url" inputmode="url" placeholder="https://restaurant.com/menu" value="${escapeHtml(existingMenuUrl)}" /></label><button id="useTopPicksMenuLinkBtn" type="button" class="secondary-btn full-btn">📖 Use this menu</button></div>`:"";
+  const menuProblem=/menu|recommendation|verif/i.test(message);
+  const menuHelp=menuProblem&&!existingMenuUrl?`<div class="empty top-picks-link-help"><strong>A menu link may help.</strong><p>Paste the restaurant's full menu link below and My Usual will try the recommendations again.</p><label class="inline-menu-link-label">Menu link<input id="topPicksMenuLinkInput" type="url" inputmode="url" placeholder="https://restaurant.com/menu" /></label><button id="useTopPicksMenuLinkBtn" type="button" class="secondary-btn full-btn">📖 Use this menu</button></div>`:menuProblem&&existingMenuUrl?`<div class="empty top-picks-link-help"><strong>Menu link found ✓</strong><p>My Usual found the menu, but this website did not expose readable item names. It already checked alternate verified menu sources, so you do not need to paste the same link again.</p></div>`:"";
   $("topPicksStatus").innerHTML=`<div class="empty">${escapeHtml(message)}</div>${menuHelp}`;
   $("retryTopPicksBtn").classList.toggle("hidden",action!=="retry");
 }
