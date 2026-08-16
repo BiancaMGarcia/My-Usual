@@ -409,8 +409,6 @@ function openDiscoveredRestaurant(index){
   const website=$("viewRestaurantBtn"); const websiteUrl=safeUrl(r.website); if(websiteUrl){website.href=websiteUrl;website.textContent="🌐 Restaurant website ↗";website.classList.remove("hidden");}else{website.classList.add("hidden");}
   const maps=$("viewMapsBtn"); if(r.googleMapsUrl){maps.href=r.googleMapsUrl;maps.classList.remove("hidden");}else{maps.classList.add("hidden");}
   const yelp=$("viewYelpBtn");yelp.href=safeUrl(r.yelpUrl)||yelpSearchUrl(r.name,r.address);yelp.textContent=safeUrl(r.yelpUrl)?"⭐ View on Yelp ↗":"⭐ Find Yelp ratings ↗";yelp.classList.remove("hidden");
-  const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
-  $("saveDiscoveredRestaurantBtn").textContent=existing?"✓ Already in My Usual":"＋ Save to My Usual";$("saveDiscoveredRestaurantBtn").disabled=!!existing;
   $("discoverDialog").close();$("discoveredRestaurantDialog").showModal();
   enrichRestaurantThenLoadTopPicks();
 }
@@ -425,7 +423,6 @@ function openSavedRestaurantTopPicks(){
   const website=$("viewRestaurantBtn");if(detail.website){website.href=detail.website;website.textContent="🌐 Restaurant website ↗";website.classList.remove("hidden");}else website.classList.add("hidden");
   const maps=$("viewMapsBtn");if(detail.googleMapsUrl){maps.href=detail.googleMapsUrl;maps.classList.remove("hidden");}else maps.classList.add("hidden");
   const yelp=$("viewYelpBtn");yelp.href=yelpSearchUrl(detail.name,detail.address);yelp.textContent="⭐ Find Yelp ratings ↗";yelp.classList.remove("hidden");
-  $("saveDiscoveredRestaurantBtn").textContent="✓ Already in My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;
   $("restaurantDialog").close();$("discoveredRestaurantDialog").showModal();enrichRestaurantThenLoadTopPicks();
 }
 
@@ -562,7 +559,6 @@ async function saveTopPicks(saveAll=false){
       if(error)throw error;
     }
     await loadData();render();renderTopPicks(currentTopPicks);
-    $("saveDiscoveredRestaurantBtn").textContent="✓ Already in My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;
     showToast(newPicks.length?`${newPicks.length} pick${newPicks.length===1?"":"s"} saved under ${restaurant.name}`:"Those picks are already saved.");
   }catch(error){console.error(error);showToast(`Couldn't save picks: ${error.message||"Unknown database error"}`);}finally{setLoading(false);}
 }
@@ -620,15 +616,6 @@ async function loadTopPicks(){
 }
 function extractLocationFromAddress(address=""){const parts=address.split(",").map(x=>x.trim()).filter(Boolean);return parts.length>=3?parts[parts.length-3]:"";}
 function yelpSearchUrl(name="",location=""){return `https://www.yelp.com/search?find_desc=${encodeURIComponent(name||"Restaurant")}&find_loc=${encodeURIComponent(location||"")}`;}
-async function saveDiscoveredRestaurant(){
-  if(!selectedDiscoveredRestaurant)return;
-  if(!currentUser||!isAdmin){$("discoveredRestaurantDialog").close();$("loginError").classList.add("hidden");$("loginDialog").showModal();showToast("Sign in to save restaurants.");return;}
-  setLoading(true,"Saving to My Usual…");
-  try{
-    await ensureDiscoveredRestaurantSaved();
-    await loadData();render();$("saveDiscoveredRestaurantBtn").textContent="✓ Saved to My Usual";$("saveDiscoveredRestaurantBtn").disabled=true;showToast("Restaurant saved");
-  }finally{setLoading(false);}
-}
 
 $("searchInput").addEventListener("input", render);
 
@@ -1021,7 +1008,6 @@ $("restaurantZipInput").addEventListener("keydown",e=>{if(e.key==="Enter")search
 $("restaurantRadiusInput").addEventListener("input",updateRestaurantRadiusLabel);
 $("restaurantSuggestionChips").addEventListener("click",e=>{const btn=e.target.closest("[data-suggestion]");if(btn)searchRestaurants(btn.dataset.suggestion);});
 $("discoverResults").addEventListener("click",e=>{const btn=e.target.closest("[data-discovered-index]");if(btn)openDiscoveredRestaurant(Number(btn.dataset.discoveredIndex));});
-$("saveDiscoveredRestaurantBtn").addEventListener("click",saveDiscoveredRestaurant);
 $("saveSelectedPicksBtn").addEventListener("click",()=>saveTopPicks(false));
 $("saveAllPicksBtn").addEventListener("click",()=>saveTopPicks(true));
 $("retryTopPicksBtn").addEventListener("click",loadTopPicks);
@@ -1082,7 +1068,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=40"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=41"));
 }
 
 
