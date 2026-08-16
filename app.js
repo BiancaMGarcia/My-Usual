@@ -405,7 +405,7 @@ function openDiscoveredRestaurant(index){
   const menu=$("viewMenuBtn"); const menuUrl=safeUrl(r.menuUrl); if(menuUrl){menu.href=menuUrl;menu.textContent="📖 View menu ↗";menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
   const website=$("viewRestaurantBtn"); const websiteUrl=safeUrl(r.website); if(websiteUrl){website.href=websiteUrl;website.textContent="🌐 Restaurant website ↗";website.classList.remove("hidden");}else{website.classList.add("hidden");}
   const maps=$("viewMapsBtn"); if(r.googleMapsUrl){maps.href=r.googleMapsUrl;maps.classList.remove("hidden");}else{maps.classList.add("hidden");}
-  const yelp=$("viewYelpBtn");yelp.href=yelpSearchUrl(r.name,r.address);yelp.classList.remove("hidden");
+  const yelp=$("viewYelpBtn");yelp.href=safeUrl(r.yelpUrl)||yelpSearchUrl(r.name,r.address);yelp.textContent=safeUrl(r.yelpUrl)?"⭐ View on Yelp ↗":"⭐ Find Yelp ratings ↗";yelp.classList.remove("hidden");
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
   $("saveDiscoveredRestaurantBtn").textContent=existing?"✓ Already in My Usual":"＋ Save to My Usual";$("saveDiscoveredRestaurantBtn").disabled=!!existing;
   $("discoverDialog").close();$("discoveredRestaurantDialog").showModal();
@@ -563,6 +563,7 @@ async function loadTopPicks(){
       selectedDiscoveredRestaurant.menuUrl=safeUrl(result.menuUrl);
       if(selectedDiscoveredRestaurant.menuUrl){$("viewMenuBtn").href=selectedDiscoveredRestaurant.menuUrl;$("viewMenuBtn").textContent="📖 View menu ↗";$("viewMenuBtn").classList.remove("hidden");}
     }
+    if(result.yelpUrl&&selectedDiscoveredRestaurant){selectedDiscoveredRestaurant.yelpUrl=safeUrl(result.yelpUrl);$("viewYelpBtn").href=selectedDiscoveredRestaurant.yelpUrl;$("viewYelpBtn").textContent="⭐ View on Yelp ↗";}
     renderTopPicks(result.picks.slice(0,5));
   }catch(error){
     if(requestId!==topPicksRequestId)return;
@@ -1033,7 +1034,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=36"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=37"));
 }
 
 
