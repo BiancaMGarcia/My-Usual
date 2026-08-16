@@ -497,7 +497,8 @@ function invalidateTopPicks(){
 }
 
 function showTopPicksMessage(message, action=""){
-  const menuHelp=/menu|recommendation|verif/i.test(message)?`<div class="empty top-picks-link-help"><strong>A menu link may help.</strong><p>${discoveredReturnTarget==="saved"?"Edit this restaurant and paste its full menu link, then try Top Picks again.":"Go back to restaurant search and paste the restaurant's menu link to help verify its dishes."}</p>${discoveredReturnTarget==="saved"&&selectedRestaurantId?'<button id="addMenuLinkHelpBtn" type="button" class="secondary-btn full-btn">✏️ Add or edit menu link</button>':""}</div>`:"";
+  const existingMenuUrl=safeUrl(selectedDiscoveredRestaurant?.menuUrl||"");
+  const menuHelp=/menu|recommendation|verif/i.test(message)?`<div class="empty top-picks-link-help"><strong>A menu link may help.</strong><p>Paste the restaurant's full menu link below and My Usual will try the recommendations again.</p><label class="inline-menu-link-label">Menu link<input id="topPicksMenuLinkInput" type="url" inputmode="url" placeholder="https://restaurant.com/menu" value="${escapeHtml(existingMenuUrl)}" /></label><button id="useTopPicksMenuLinkBtn" type="button" class="secondary-btn full-btn">📖 Use this menu</button></div>`:"";
   $("topPicksStatus").innerHTML=`<div class="empty">${escapeHtml(message)}</div>${menuHelp}`;
   $("retryTopPicksBtn").classList.toggle("hidden",action!=="retry");
 }
@@ -653,10 +654,21 @@ $("categoryChips").addEventListener("click", e => {
 });
 
 document.addEventListener("click", async e => {
-  if (e.target.closest("#addMenuLinkHelpBtn")) {
-    $("discoveredRestaurantDialog").close();
-    openRestaurantForm(selectedRestaurantId);
-    setTimeout(() => $("restaurantWebsiteInput").focus(), 100);
+  if (e.target.closest("#useTopPicksMenuLinkBtn")) {
+    const input=$("topPicksMenuLinkInput");
+    const menuUrl=safeUrl(input?.value);
+    if(!menuUrl){showToast("Enter a complete menu link beginning with https://");input?.focus();return;}
+    if(!selectedDiscoveredRestaurant){showToast("Reopen the restaurant and try again.");return;}
+    selectedDiscoveredRestaurant.menuUrl=menuUrl;
+    selectedDiscoveredRestaurant.menuSourceType="user-provided";
+    const menuButton=$("viewMenuBtn");menuButton.href=menuUrl;menuButton.textContent="📖 View provided menu ↗";menuButton.classList.remove("hidden");
+    if(discoveredReturnTarget==="saved"&&selectedRestaurantId&&currentUser){
+      let {error}=await sb.from("restaurants").update({website_url:menuUrl,website_link_type:"menu"}).eq("id",selectedRestaurantId);
+      if(error&&isMissingColumnError(error,"website_link_type"))({error}=await sb.from("restaurants").update({website_url:menuUrl}).eq("id",selectedRestaurantId));
+      if(error){console.error("Menu link save failed:",error);showToast("The link will be used now, but couldn't be saved.");}
+      else{await loadData();showToast("Menu link saved");}
+    }
+    loadTopPicks();
     return;
   }
   const closeBtn = e.target.closest("[data-close-dialog]");
