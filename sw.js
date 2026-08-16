@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v42-restaurant-identity-safety";
-const ASSETS = ["./", "./index.html", "./styles.css?v=42", "./app.js?v=42", "./manifest.webmanifest?v=42", "./icon-192.png?v=42", "./icon-512.png?v=42", "./avatar-husky-blue.png?v=42", "./avatar-brown-peach.png?v=42", "./avatar-samoyed-lavender.png?v=42", "./avatar-white-mint.png?v=42", "./avatar-spitz-pink.png?v=42", "./avatar-shepherd-yellow.png?v=42"];
+const CACHE = "my-usual-v43-link-enrichment";
+const ASSETS = ["./", "./index.html", "./styles.css?v=43", "./app.js?v=43", "./manifest.webmanifest?v=43", "./icon-192.png?v=43", "./icon-512.png?v=43", "./avatar-husky-blue.png?v=43", "./avatar-brown-peach.png?v=43", "./avatar-samoyed-lavender.png?v=43", "./avatar-white-mint.png?v=43", "./avatar-spitz-pink.png?v=43", "./avatar-shepherd-yellow.png?v=43"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

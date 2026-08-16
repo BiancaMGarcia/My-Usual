@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=42" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=42" />
-  <link rel="stylesheet" href="styles.css?v=42" />
+  <link rel="manifest" href="manifest.webmanifest?v=43" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=43" />
+  <link rel="stylesheet" href="styles.css?v=43" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=42" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=43" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -193,10 +193,14 @@
       </div>
       <div class="discover-fields">
         <label>
-          Restaurant or cuisine <span class="muted">(optional)</span>
+          Restaurant or cuisine <span class="muted">(optional with a link)</span>
           <div class="search-wrap discover-search"><span>🔎</span><input id="restaurantSearchInput" type="search" placeholder="Din Tai Fung, sushi, brunch…" autocomplete="off" /></div>
         </label>
-        <label>ZIP code<input id="restaurantZipInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="ZIP" /></label>
+        <label>
+          Restaurant, menu, Yelp, or ordering link <span class="muted">(optional)</span>
+          <input id="restaurantSearchLinkInput" type="url" inputmode="url" placeholder="https://restaurant.com/menu" />
+        </label>
+        <label>ZIP code <span class="muted">(recommended with a link)</span><input id="restaurantZipInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="ZIP" /></label>
       </div>
       <div class="radius-control">
         <div class="radius-heading">
@@ -394,6 +398,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=42"></script>
+  <script src="app.js?v=43"></script>
 </body>
 </html>
