@@ -202,7 +202,7 @@ function renderRestaurantSheet() {
   if (!r) return;
 
   const website = safeUrl(r.website_url);
-  const maps = safeUrl(r.google_maps_url);
+  const maps = safeUrl(r.google_maps_url) || googleMapsSearchUrl(r.name,r.location);
   $("restaurantName").innerHTML = website ? `<a class="saved-link" href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(r.name)} ↗</a>` : escapeHtml(r.name);
   $("restaurantCategory").textContent = [r.category, r.location].filter(Boolean).join(" · ");
   $("favoriteBtn").textContent = r.favorite ? "⭐" : "♡";
@@ -453,6 +453,10 @@ function renderTopPicks(picks){
       </div>
     </li>`).join("");
   $("topPicksActions").classList.toggle("hidden",picks.every(pick=>savedNames.has((pick.name||"").toLowerCase())));
+  $("saveAllPicksBtn").textContent=`Save all ${picks.length}`;
+  $("topPicksExplainer").textContent=picks.length<5
+    ? `We verified ${picks.length} current menu ${picks.length===1?"item":"items"} that match your taste profile.`
+    : "Personalized using your taste profile and this restaurant’s menu.";
 }
 
 async function pickFromNewRestaurant(){
@@ -715,7 +719,7 @@ $("restaurantForm").addEventListener("submit", async e => {
     location: $("restaurantLocationInput").value.trim() || null,
     website_url: safeUrl($("restaurantWebsiteInput").value) || null,
     website_link_type: safeUrl($("restaurantWebsiteInput").value) ? $("restaurantLinkTypeInput").value : null,
-    google_maps_url: safeUrl($("restaurantMapsInput").value) || null,
+    google_maps_url: safeUrl($("restaurantMapsInput").value) || googleMapsSearchUrl($("restaurantNameInput").value,$("restaurantLocationInput").value) || null,
     rating: $("restaurantRatingInput").value ? Number($("restaurantRatingInput").value) : null,
     favorite: $("restaurantFavoriteInput").checked,
     user_id: currentUser.id
@@ -968,6 +972,11 @@ function safeUrl(value = "") {
   } catch { return ""; }
 }
 
+function googleMapsSearchUrl(name="",location=""){
+  const query=[name,location].map(value=>String(value||"").trim()).filter(Boolean).join(", ");
+  return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:"";
+}
+
 function isMissingColumnError(error, column) {
   const message = `${error?.message || ""} ${error?.details || ""}`.toLowerCase();
   return message.includes(column.toLowerCase()) && (message.includes("column") || message.includes("schema cache"));
@@ -1005,7 +1014,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=31"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=33"));
 }
 
 
