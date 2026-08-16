@@ -368,7 +368,6 @@ function openDiscover(){
   $("discoverStatus").textContent="";
   $("discoverResults").innerHTML="";
   $("restaurantSearchInput").value="";
-  $("restaurantSearchLinkInput").value="";
   $("restaurantZipInput").value=localStorage.getItem(LAST_ZIP_STORAGE_KEY)||"";
   const savedRadius=Number(localStorage.getItem("my-usual-search-radius"))||25;
   $("restaurantRadiusInput").value=String(Math.min(50,Math.max(5,savedRadius)));
@@ -382,7 +381,8 @@ function showRestaurantSearchLoading(){
 async function searchRestaurants(suggestion=""){
   invalidateTopPicks();
   const search=$("restaurantSearchInput").value.trim();
-  const sourceUrl=safeUrl($("restaurantSearchLinkInput").value);
+  const sourceUrl=safeUrl(search);
+  const restaurantSearchText=sourceUrl?"":search;
   const zip=$("restaurantZipInput").value.trim();
   const radiusMiles=Number($("restaurantRadiusInput").value)||25;
   if(!sourceUrl&&!/^\d{5}$/.test(zip)){$("discoverStatus").textContent="Enter a valid 5-digit ZIP code, or paste a restaurant link.";$("restaurantZipInput").focus();return;}
@@ -394,7 +394,7 @@ async function searchRestaurants(suggestion=""){
   $("restaurantSearchBtn").disabled=true;$("restaurantSearchBtn").textContent="Searching…";$("discoverStatus").textContent="Searching restaurants…";showRestaurantSearchLoading();
   try{
     if(sourceUrl){
-      const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-restaurant`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName:search,location:zip,sourceUrl})});
+      const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-restaurant`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName:restaurantSearchText,location:zip,sourceUrl})});
       const result=await response.json().catch(()=>({}));
       if(!response.ok){console.error(result);$("discoverStatus").textContent=result.error||"That link couldn't be matched to a restaurant.";$("discoverResults").innerHTML="";return;}
       discoveredRestaurants=(result.matches||[]).map(r=>({...r,website:r.website||"",menuUrl:r.menuUrl||""}));
@@ -1043,7 +1043,6 @@ $("closeDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRes
 $("dismissDiscoveredRestaurantBtn").addEventListener("click",()=>{$("discoveredRestaurantDialog").close();invalidateTopPicks();});
 $("restaurantSearchBtn").addEventListener("click",()=>searchRestaurants());
 $("restaurantSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
-$("restaurantSearchLinkInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
 $("savedTopPicksBtn").addEventListener("click",openSavedRestaurantTopPicks);
 $("restaurantZipInput").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,5);});
 $("restaurantZipInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchRestaurants();});
