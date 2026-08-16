@@ -403,7 +403,10 @@ function updateRestaurantRadiusLabel(){
 }
 function openDiscoveredRestaurant(index){
   discoveredReturnTarget="search";
-  selectedDiscoveredRestaurant=discoveredRestaurants[index]; const r=selectedDiscoveredRestaurant; if(!r)return;
+  const searchResult=discoveredRestaurants[index];if(!searchResult)return;
+  // Search-provider website fields are unverified. Keep the restaurant identity,
+  // address, and Maps link, then let lookup-restaurant supply verified web links.
+  selectedDiscoveredRestaurant={...searchResult,website:"",menuUrl:"",menuSourceType:""}; const r=selectedDiscoveredRestaurant;
   const kind=r.type||r.category||r.cuisine||r.primaryType||"Restaurant";$("discoveredName").textContent=`${foodEmoji(r.name,kind)} ${r.name||"Restaurant"}`;$("discoveredType").textContent=kind;$("discoveredAddress").textContent=r.address?`📍 ${r.address}`:"";
   const menu=$("viewMenuBtn"); const menuUrl=safeUrl(r.menuUrl); if(menuUrl){menu.href=menuUrl;menu.textContent="📖 View menu ↗";menu.classList.remove("hidden");}else{menu.classList.add("hidden");}
   const website=$("viewRestaurantBtn"); const websiteUrl=safeUrl(r.website); if(websiteUrl){website.href=websiteUrl;website.textContent="🌐 Restaurant website ↗";website.classList.remove("hidden");}else{website.classList.add("hidden");}
@@ -429,13 +432,14 @@ function openSavedRestaurantTopPicks(){
 async function enrichRestaurantThenLoadTopPicks(){
   const restaurant=selectedDiscoveredRestaurant;if(!restaurant)return;
   const expectedName=restaurant.name;
+  const expectedAddress=restaurant.address||"";
   resetTopPicks();$("topPicksExplainer").textContent="Finding the official restaurant website and menu before researching your picks.";showTopPicksLoading();
   try{
     const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-restaurant`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName:restaurant.name,location:restaurant.address||""})});
     const result=await response.json().catch(()=>({}));
-    if(response.ok&&selectedDiscoveredRestaurant?.name===expectedName){
+    if(response.ok&&selectedDiscoveredRestaurant?.name===expectedName&&selectedDiscoveredRestaurant?.address===expectedAddress){
       const matches=Array.isArray(result.matches)?result.matches:[];
-      const match=matches.find(item=>normalizeSearchName(item.name)===normalizeSearchName(restaurant.name))||matches[0];
+      const match=matches.find(item=>restaurantIdentityMatches(item,restaurant));
       if(match){
         selectedDiscoveredRestaurant={...selectedDiscoveredRestaurant,name:match.name||restaurant.name,type:match.type||restaurant.type,address:match.address||restaurant.address,website:safeUrl(match.website)||restaurant.website,menuUrl:safeUrl(match.menuUrl)||restaurant.menuUrl,menuSourceType:match.menuSourceType||restaurant.menuSourceType,googleMapsUrl:safeUrl(match.googleMapsUrl)||restaurant.googleMapsUrl};
         const detail=selectedDiscoveredRestaurant;
@@ -450,6 +454,14 @@ async function enrichRestaurantThenLoadTopPicks(){
 }
 
 function normalizeSearchName(value=""){return String(value||"").toLowerCase().replace(/[^a-z0-9]+/g,"").replace(/restaurant|cafe|shop|studio|teahouse/g,"");}
+function restaurantIdentityMatches(candidate={},expected={}){
+  const candidateName=normalizeSearchName(candidate.name),expectedName=normalizeSearchName(expected.name);
+  if(!candidateName||!expectedName||candidateName!==expectedName)return false;
+  const candidateAddress=String(candidate.address||"").toLowerCase(),expectedAddress=String(expected.address||"").toLowerCase();
+  const expectedZip=expectedAddress.match(/\b\d{5}\b/)?.[0];
+  if(expectedZip&&candidateAddress&&!candidateAddress.includes(expectedZip))return false;
+  return true;
+}
 function menuLinkLabel(type=""){return type==="official"?"📖 Official menu ↗":type==="restaurant-linked"?"🛍️ Restaurant-linked order menu ↗":type==="third-party"?"🔎 Third-party menu ↗":"📖 View menu ↗";}
 function menuSourceLabel(type=""){return type==="official"?"Official restaurant menu":type==="restaurant-linked"?"Ordering page linked by the restaurant":type==="saved-menu"?"Saved menu link":type==="third-party"?"Third-party menu fallback":"Menu source";}
 
