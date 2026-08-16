@@ -24,6 +24,7 @@ let topPicksRequestId = 0;
 let currentTopPicks = [];
 let loadingCount = 0;
 let restaurantLookupMatches = [];
+let pendingItemLookupMatch = null;
 let currentAvatarId = "avatar-1";
 const $ = id => document.getElementById(id);
 const AVATARS=[
@@ -352,6 +353,7 @@ function openItemForm(id = null) {
   $("findItemDetailsStatus").textContent = "";
   $("findItemSuggestions").classList.add("hidden");
   $("findItemSuggestions").innerHTML = "";
+  pendingItemLookupMatch = null;
   $("itemNotesInput").value = item?.notes ?? "";
   $("itemRatingInput").value = item?.rating ?? "";
   $("editItemDialog").showModal();
@@ -803,18 +805,32 @@ $("findItemDetailsBtn").addEventListener("click", async () => {
     const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-item`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${session?.access_token||SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName:restaurant.name,restaurantLocation:restaurant.location||"",website:restaurant.website_url||"",websiteLinkType:restaurant.website_link_type||"restaurant",itemName})});
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||"Item lookup failed.");
-    if(result.description)$("itemDescriptionInput").value=result.description;
-    if(safeUrl(result.url)){$("itemUrlInput").value=safeUrl(result.url);$("itemLinkTypeInput").value=["item","menu","restaurant"].includes(result.linkType)?result.linkType:"restaurant";}
     const label=result.linkType==="item"?"direct item link":result.linkType==="menu"?"full menu link":"restaurant website";
-    if(!result.foundOnMenu&&Array.isArray(result.suggestions)&&result.suggestions.length){
+    if(result.foundOnMenu){
+      const matchedName=String(result.matchedName||itemName).trim();
+      pendingItemLookupMatch={...result,matchedName};
+      status.textContent="Did you mean this menu item?";
+      $("findItemSuggestions").innerHTML=`<button type="button" data-confirm-item-match="true">${foodEmoji(matchedName)} ${escapeHtml(matchedName)}${result.description?`<span class="matched-item-description">${escapeHtml(result.description)}</span>`:""}</button>`;
+      $("findItemSuggestions").classList.remove("hidden");
+    }else if(Array.isArray(result.suggestions)&&result.suggestions.length){
       status.textContent="The name wasn't an exact menu match. Did you mean:";
       $("findItemSuggestions").innerHTML=result.suggestions.map(name=>`<button type="button" data-item-suggestion="${escapeHtml(name)}">${foodEmoji(name)} ${escapeHtml(name)}</button>`).join("");$("findItemSuggestions").classList.remove("hidden");
-    }else status.textContent=result.foundOnMenu?`✓ Exact menu details found${result.url?` with a ${label}`:""}. Review before saving.`:`The exact item description wasn't available in the readable menu. ${result.url?`Added the best available ${label}.`:"You can enter details manually."}`;
+    }else status.textContent=`The exact item description wasn't available in the readable menu. ${result.url?`A ${label} is available after a confirmed match.`:"You can enter details manually."}`;
   }catch(error){console.error(error);status.textContent=error.message||"Couldn't find item details.";}
   finally{button.disabled=false;button.textContent="✨ Find item details";}
 });
 
-$("findItemSuggestions").addEventListener("click",e=>{const button=e.target.closest("[data-item-suggestion]");if(!button)return;$("itemNameInput").value=button.dataset.itemSuggestion;$("findItemDetailsBtn").click();});
+$("findItemSuggestions").addEventListener("click",e=>{
+  const confirmed=e.target.closest("[data-confirm-item-match]");
+  if(confirmed&&pendingItemLookupMatch){
+    const result=pendingItemLookupMatch;$("itemNameInput").value=result.matchedName;
+    if(result.description)$("itemDescriptionInput").value=result.description;
+    if(safeUrl(result.url)){$("itemUrlInput").value=safeUrl(result.url);$("itemLinkTypeInput").value=["item","menu","restaurant"].includes(result.linkType)?result.linkType:"restaurant";}
+    $("findItemDetailsStatus").textContent=`✓ Matched to ${result.matchedName}. Review the details before saving.`;
+    $("findItemSuggestions").classList.add("hidden");pendingItemLookupMatch=null;return;
+  }
+  const button=e.target.closest("[data-item-suggestion]");if(!button)return;$("itemNameInput").value=button.dataset.itemSuggestion;$("findItemDetailsBtn").click();
+});
 
 function renderRateButtons(value) {
   const rating = Number(value) || 0;
@@ -1017,7 +1033,7 @@ function foodEmoji(name = "", category = "") {
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=35"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=36"));
 }
 
 
