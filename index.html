@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=39" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=39" />
-  <link rel="stylesheet" href="styles.css?v=39" />
+  <link rel="manifest" href="manifest.webmanifest?v=40" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=40" />
+  <link rel="stylesheet" href="styles.css?v=40" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=39" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=40" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -237,6 +237,7 @@
       <section class="top-picks-card">
         <div class="section-head"><h3>✨ Top 5 Picks for You</h3></div>
         <p id="topPicksExplainer" class="top-picks-explainer">Personalized using your taste profile and this restaurant’s menu.</p>
+        <p id="topPicksSource" class="menu-source-note hidden"></p>
         <div id="topPicksStatus" class="top-picks-status" role="status" aria-live="polite"></div>
         <ol id="topPicksList" class="top-picks-list"></ol>
         <div id="topPicksActions" class="top-picks-actions hidden">
@@ -394,6 +395,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=39"></script>
+  <script src="app.js?v=40"></script>
 </body>
 </html>
