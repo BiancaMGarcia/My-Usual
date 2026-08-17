@@ -505,7 +505,7 @@ function showTopPicksMessage(message, action=""){
 }
 
 function showTopPicksLoading(){
-  $("topPicksStatus").innerHTML=`<div class="top-picks-loading"><span class="mini-plate">🍽️</span><div><strong>Finding your five picks</strong><div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div></div></div>`;
+  $("topPicksStatus").innerHTML=`<div class="top-picks-loading"><span class="mini-plate">🍽️</span><div><strong>Finding your Top Picks</strong><div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div></div></div>`;
   $("retryTopPicksBtn").classList.add("hidden");
 }
 
@@ -534,12 +534,12 @@ function renderTopPicks(picks){
 }
 
 async function pickFromNewRestaurant(){
-  if(!currentTopPicks.length)return showToast("Top 5 picks are still loading.");
+  if(!currentTopPicks.length)return showToast("Top Picks are still loading.");
   const button=$("pickNewRestaurantBtn");
   const result=$("newRestaurantPickResult");
   button.disabled=true;
   result.classList.remove("hidden","revealed");
-  result.innerHTML=`<div class="pick-spinner"><span>🍜</span><span>🥟</span><span>🍕</span></div><strong>Choosing from the Top 5…</strong>`;
+  result.innerHTML=`<div class="pick-spinner"><span>🍜</span><span>🥟</span><span>🍕</span></div><strong>Choosing from your Top Picks…</strong>`;
   for(let i=0;i<9;i++){
     const preview=currentTopPicks[i%currentTopPicks.length];
     result.querySelector("strong").textContent=`${foodEmoji(preview.name)} ${preview.name}`;
@@ -559,7 +559,15 @@ async function ensureDiscoveredRestaurantSaved(){
   const r=selectedDiscoveredRestaurant;
   if(!r||!currentUser)throw new Error("Sign in to save recommendations.");
   const existing=data.find(x=>x.name.toLowerCase()===(r.name||"").toLowerCase());
-  if(existing)return existing;
+  if(existing){
+    const verifiedMenu=safeUrl(r.menuUrl||"");
+    if(verifiedMenu&&safeUrl(existing.website_url||"")!==verifiedMenu){
+      let {error}=await sb.from("restaurants").update({website_url:verifiedMenu,website_link_type:"menu"}).eq("id",existing.id);
+      if(error&&isMissingColumnError(error,"website_link_type"))({error}=await sb.from("restaurants").update({website_url:verifiedMenu}).eq("id",existing.id));
+      if(!error){existing.website_url=verifiedMenu;existing.website_link_type="menu";}
+    }
+    return existing;
+  }
   const payload={name:r.name,category:r.type||"Restaurant",location:extractLocationFromAddress(r.address)||null,website_url:safeUrl(r.menuUrl||r.website)||null,website_link_type:r.menuUrl?"menu":"restaurant",google_maps_url:safeUrl(r.googleMapsUrl)||null,favorite:false,user_id:currentUser.id};
   let {data:created,error}=await sb.from("restaurants").insert(payload).select("*").single();
   if(error&&isMissingColumnError(error,"website_link_type")){
@@ -598,7 +606,7 @@ async function loadTopPicks(){
 
   if(!currentUser){
     $("topPicksExplainer").textContent="Sign in and complete your taste profile to get personalized picks.";
-    showTopPicksMessage("Sign in to see your Top 5 picks.");
+    showTopPicksMessage("Sign in to see your Top Picks.");
     return;
   }
 
@@ -632,6 +640,12 @@ async function loadTopPicks(){
       selectedDiscoveredRestaurant.menuUrl=safeUrl(result.menuUrl);
       selectedDiscoveredRestaurant.menuSourceType=result.menuSourceType||selectedDiscoveredRestaurant.menuSourceType;
       if(selectedDiscoveredRestaurant.menuUrl){$("viewMenuBtn").href=selectedDiscoveredRestaurant.menuUrl;$("viewMenuBtn").textContent=menuLinkLabel(selectedDiscoveredRestaurant.menuSourceType);$("viewMenuBtn").classList.remove("hidden");}
+      const savedRestaurant=data.find(item=>item.id===selectedRestaurantId&&normalizeSearchName(item.name)===normalizeSearchName(selectedDiscoveredRestaurant.name));
+      if(savedRestaurant&&selectedDiscoveredRestaurant.menuUrl){
+        let {error}=await sb.from("restaurants").update({website_url:selectedDiscoveredRestaurant.menuUrl,website_link_type:"menu"}).eq("id",savedRestaurant.id);
+        if(error&&isMissingColumnError(error,"website_link_type"))({error}=await sb.from("restaurants").update({website_url:selectedDiscoveredRestaurant.menuUrl}).eq("id",savedRestaurant.id));
+        if(!error){savedRestaurant.website_url=selectedDiscoveredRestaurant.menuUrl;savedRestaurant.website_link_type="menu";}
+      }
     }
     if(result.menuUrl){const checked=result.menuCheckedAt?new Date(result.menuCheckedAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}):"just now";$("topPicksSource").innerHTML=`Menu checked ${escapeHtml(checked)} · <a href="${escapeHtml(safeUrl(result.menuUrl))}" target="_blank" rel="noopener">${escapeHtml(menuSourceLabel(result.menuSourceType))} ↗</a>`;$("topPicksSource").classList.remove("hidden");}
     if(result.yelpUrl&&selectedDiscoveredRestaurant){selectedDiscoveredRestaurant.yelpUrl=safeUrl(result.yelpUrl);$("viewYelpBtn").href=selectedDiscoveredRestaurant.yelpUrl;$("viewYelpBtn").textContent="⭐ View on Yelp ↗";}
@@ -891,7 +905,10 @@ $("findItemDetailsBtn").addEventListener("click", async () => {
   status.textContent="Searching for this item and the best available link…";status.classList.remove("hidden");
   try{
     const {data:{session}}=await sb.auth.getSession();
-    const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-item`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${session?.access_token||SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName:restaurant.name,restaurantLocation:restaurant.location||"",website:restaurant.website_url||"",websiteLinkType:restaurant.website_link_type||"restaurant",itemName})});
+    const activeMenu=normalizeSearchName(selectedDiscoveredRestaurant?.name||"")===normalizeSearchName(restaurant.name)?safeUrl(selectedDiscoveredRestaurant?.menuUrl||""):"";
+    const lookupWebsite=activeMenu||safeUrl(restaurant.website_url||"");
+    const lookupLinkType=activeMenu?"menu":restaurant.website_link_type||"restaurant";
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/lookup-item`,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":`Bearer ${session?.access_token||SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({restaurantName:restaurant.name,restaurantLocation:restaurant.location||"",website:lookupWebsite,websiteLinkType:lookupLinkType,itemName})});
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||"Item lookup failed.");
     const label=result.linkType==="item"?"direct item link":result.linkType==="menu"?"full menu link":"restaurant website";
