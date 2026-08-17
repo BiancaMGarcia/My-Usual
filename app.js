@@ -1238,7 +1238,16 @@ function closeHelpTour(){clearHelpTourTarget();document.body.classList.remove("h
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=58"));
+  let reloadingForUpdate=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(reloadingForUpdate)return;reloadingForUpdate=true;sessionStorage.setItem("my-usual-just-updated","true");window.location.reload();});
+  window.addEventListener("load",async()=>{
+    try{
+      const registration=await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"});
+      await registration.update();
+      if(registration.waiting)registration.waiting.postMessage({type:"SKIP_WAITING"});
+      document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")registration.update().catch(()=>{});});
+    }catch(error){console.error("App update check failed:",error);}
+  });
 }
 
 
@@ -1396,6 +1405,7 @@ function openAccountDialog() {
 
 
 window.addEventListener("DOMContentLoaded", () => {
+  if(sessionStorage.getItem("my-usual-just-updated")){sessionStorage.removeItem("my-usual-just-updated");setTimeout(()=>showToast("My Usual updated to the newest version"),700);}
   $("helpTourBtn")?.addEventListener("click",()=>openHelpTour(false));
   $("accountHelpTourBtn")?.addEventListener("click",()=>{$("accountDialog")?.close();openHelpTour();});
   $("startFullHelpTourBtn")?.addEventListener("click",()=>{helpTourMode="tour";helpTourStep=0;renderHelpTour();});
