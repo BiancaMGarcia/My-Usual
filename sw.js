@@ -1,6 +1,6 @@
-const CACHE = "my-usual-v59-auto-update";
-const CORE_ASSETS = ["./", "./index.html", "./styles.css?v=59", "./app.js?v=59"];
-const OPTIONAL_ASSETS = ["./manifest.webmanifest?v=59", "./icon-192.png?v=59", "./icon-512.png?v=59", "./avatar-husky-blue.png?v=59", "./avatar-brown-peach.png?v=59", "./avatar-samoyed-lavender.png?v=59", "./avatar-white-mint.png?v=59", "./avatar-spitz-pink.png?v=59", "./avatar-shepherd-yellow.png?v=59"];
+const CACHE = "my-usual-v60-correct-add-guide";
+const CORE_ASSETS = ["./", "./index.html", "./styles.css?v=60", "./app.js?v=60"];
+const OPTIONAL_ASSETS = ["./manifest.webmanifest?v=60", "./icon-192.png?v=60", "./icon-512.png?v=60", "./avatar-husky-blue.png?v=60", "./avatar-brown-peach.png?v=60", "./avatar-samoyed-lavender.png?v=60", "./avatar-white-mint.png?v=60", "./avatar-spitz-pink.png?v=60", "./avatar-shepherd-yellow.png?v=60"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(async cache=>{await cache.addAll(CORE_ASSETS);await Promise.allSettled(OPTIONAL_ASSETS.map(asset=>cache.add(asset)));}));

@@ -46,7 +46,7 @@ const HELP_TOUR_STEPS=[
   {icon:"💾",target:"#openDiscoverBtn",title:"Save a restaurant or Top Pick",text:"Find and open a restaurant here. On its Top Picks screen, choose the picks you want and press Save Selected Picks or Save All Picks.",tip:"The restaurant and chosen orders will then appear on your home screen."},
   {icon:"🎲",target:"#searchInput",title:"Let the app choose an order",text:"Find and open a saved restaurant using this box, then press Pick for me above your usual orders.",tip:"This chooses from the orders you have saved at that restaurant."},
   {icon:"➕",target:"#searchInput",title:"Add an order manually",text:"Find and open a saved restaurant using this box. On the restaurant screen, press Add order and enter the item name.",tip:"Use Find item details to let My Usual search the restaurant’s saved menu link."},
-  {icon:"✏️",target:"#editModeBtn",title:"Add a restaurant manually",text:"Press the person button, sign in, and return home. Press Add beside All restaurants, enter its information, then Save.",tip:"Find restaurant details can fill in its full name, address, website, menu, and Maps link."},
+  {id:"add-restaurant",icon:"✏️",target:"#addRestaurantBtn",title:"Add a restaurant manually",text:"On the home screen, scroll to All restaurants and press + Add. Enter the restaurant’s information, then press Save.",tip:"If + Add is not visible, press the profile button, sign in, and return to the home screen. Find restaurant details can fill in its name, address, website, menu, and Maps link."},
   {icon:"🔗",target:"#searchInput",title:"Add or edit restaurant links",text:"Find and open the saved restaurant here. Press Edit, then add or replace its website, menu, or Google Maps link.",tip:"A direct menu link gives Top Picks and item search the best chance of finding dishes."},
   {icon:"⭐",target:"#searchInput",title:"Favorite or rate something",text:"Open a saved restaurant. Press the heart near its name to favorite the restaurant, or press Rate on an order and choose one to five stars.",tip:"Favorites also appear together in the Favorites section on the home screen."},
   {icon:"📋",target:"#searchInput",title:"Copy an order",text:"Open a saved restaurant and press Copy order on the item you want. The item name and your saved preferences are copied so you can paste them elsewhere.",tip:"This is useful when ordering in another app or sending your order to someone."},
@@ -1200,8 +1200,9 @@ function foodEmoji(name = "", category = "") {
 
 function renderHelpTour(){
   const step=HELP_TOUR_STEPS[helpTourStep];if(!step)return;
+  const addRestaurantNeedsSignIn=step.id==="add-restaurant"&&!currentUser;
   $("helpTourProgress").textContent=`Step ${helpTourStep+1} of ${HELP_TOUR_STEPS.length}`;
-  $("helpTourIcon").textContent=step.icon;$("helpTourTitle").textContent=step.title;$("helpTourText").textContent=step.text;$("helpTourTip").textContent=`Helpful tip: ${step.tip}`;
+  $("helpTourIcon").textContent=step.icon;$("helpTourTitle").textContent=step.title;$("helpTourText").textContent=addRestaurantNeedsSignIn?"First press the highlighted profile button and sign in. When you return home, scroll to All restaurants and press + Add.":step.text;$("helpTourTip").textContent=`Helpful tip: ${step.tip}`;
   $("helpTourDots").innerHTML=HELP_TOUR_STEPS.map((_,index)=>`<span class="help-tour-dot${index===helpTourStep?" active":""}"></span>`).join("");
   $("helpTourBackBtn").classList.toggle("hidden",helpTourStep===0);
   $("helpTourNextBtn").textContent=helpTourStep===HELP_TOUR_STEPS.length-1?"Done":"Next";
@@ -1210,7 +1211,7 @@ function renderHelpTour(){
   document.querySelector(".help-tour-actions")?.classList.toggle("hidden",helpTourMode!=="tour");
   $("backToHelpTopicsBtn").classList.toggle("hidden",helpTourMode!=="topic");
   $("skipHelpTourBtn").textContent=helpTourMode==="tour"?"Exit walkthrough":"Close help";
-  highlightHelpTourTarget(step.target);
+  highlightHelpTourTarget(addRestaurantNeedsSignIn?"#editModeBtn":step.target);
 }
 function renderHelpTopics(){
   helpTourMode="menu";clearHelpTourTarget();$("helpTourProgress").textContent="Help topics";$("helpTourIcon").textContent="🧭";$("helpTourTitle").textContent="What do you need help with?";$("helpTourText").textContent="Choose one task below. You’ll see only that answer and where to start.";
