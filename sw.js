@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v56-spotlight-help";
-const ASSETS = ["./", "./index.html", "./styles.css?v=56", "./app.js?v=56", "./manifest.webmanifest?v=56", "./icon-192.png?v=56", "./icon-512.png?v=56", "./avatar-husky-blue.png?v=56", "./avatar-brown-peach.png?v=56", "./avatar-samoyed-lavender.png?v=56", "./avatar-white-mint.png?v=56", "./avatar-spitz-pink.png?v=56", "./avatar-shepherd-yellow.png?v=56"];
+const CACHE = "my-usual-v58-nonoverlap-help";
+const ASSETS = ["./", "./index.html", "./styles.css?v=58", "./app.js?v=58", "./manifest.webmanifest?v=58", "./icon-192.png?v=58", "./icon-512.png?v=58", "./avatar-husky-blue.png?v=58", "./avatar-brown-peach.png?v=58", "./avatar-samoyed-lavender.png?v=58", "./avatar-white-mint.png?v=58", "./avatar-spitz-pink.png?v=58", "./avatar-shepherd-yellow.png?v=58"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

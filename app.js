@@ -31,6 +31,7 @@ let restaurantLookupMatches = [];
 let pendingItemLookupMatch = null;
 let currentAvatarId = "avatar-1";
 let helpTourStep = 0;
+let helpTourMode = "menu";
 const $ = id => document.getElementById(id);
 const HELP_TOUR_STEPS=[
   {icon:"👋",target:".brand-title-row",title:"Welcome to My Usual",text:"My Usual remembers restaurants and orders you enjoy, then helps you decide what to order somewhere new.",tip:"The glowing outline shows where each feature is on the screen."},
@@ -1204,29 +1205,40 @@ function renderHelpTour(){
   $("helpTourDots").innerHTML=HELP_TOUR_STEPS.map((_,index)=>`<span class="help-tour-dot${index===helpTourStep?" active":""}"></span>`).join("");
   $("helpTourBackBtn").classList.toggle("hidden",helpTourStep===0);
   $("helpTourNextBtn").textContent=helpTourStep===HELP_TOUR_STEPS.length-1?"Done":"Next";
-  $("helpTourTopics").classList.add("hidden");
+  $("helpTourTip").classList.remove("hidden");$("helpTourStartChoices").classList.add("hidden");$("helpTourTopics").classList.add("hidden");
+  $("helpTourTopicsBtn").classList.toggle("hidden",helpTourMode!=="tour");$("helpTourDots").classList.toggle("hidden",helpTourMode!=="tour");
+  document.querySelector(".help-tour-actions")?.classList.toggle("hidden",helpTourMode!=="tour");
+  $("backToHelpTopicsBtn").classList.toggle("hidden",helpTourMode!=="topic");
+  $("skipHelpTourBtn").textContent=helpTourMode==="tour"?"Exit walkthrough":"Close help";
   highlightHelpTourTarget(step.target);
 }
 function renderHelpTopics(){
-  clearHelpTourTarget();$("helpTourTopics").innerHTML=HELP_TOUR_STEPS.slice(1).map((step,index)=>`<button type="button" class="help-tour-topic" data-help-step="${index+1}">${step.icon} ${escapeHtml(step.title)}</button>`).join("");
-  $("helpTourTopics").classList.remove("hidden");
+  helpTourMode="menu";clearHelpTourTarget();$("helpTourProgress").textContent="Help topics";$("helpTourIcon").textContent="🧭";$("helpTourTitle").textContent="What do you need help with?";$("helpTourText").textContent="Choose one task below. You’ll see only that answer and where to start.";
+  $("helpTourTip").classList.add("hidden");$("helpTourStartChoices").classList.add("hidden");$("helpTourTopicsBtn").classList.add("hidden");$("helpTourDots").classList.add("hidden");document.querySelector(".help-tour-actions")?.classList.add("hidden");$("backToHelpTopicsBtn").classList.add("hidden");$("skipHelpTourBtn").textContent="Close help";
+  $("helpTourTopics").innerHTML=HELP_TOUR_STEPS.slice(1).map((step,index)=>`<button type="button" class="help-tour-topic" data-help-step="${index+1}">${step.icon} ${escapeHtml(step.title)}</button>`).join("");$("helpTourTopics").classList.remove("hidden");
+}
+function renderHelpLanding(){
+  helpTourMode="menu";clearHelpTourTarget();$("helpTourProgress").textContent="Help center";$("helpTourIcon").textContent="❓";$("helpTourTitle").textContent="How would you like help?";$("helpTourText").textContent="Take the whole walkthrough, or choose one thing you need help doing right now.";
+  $("helpTourTip").classList.add("hidden");$("helpTourStartChoices").classList.remove("hidden");$("helpTourTopicsBtn").classList.add("hidden");$("helpTourTopics").classList.add("hidden");$("helpTourDots").classList.add("hidden");document.querySelector(".help-tour-actions")?.classList.add("hidden");$("backToHelpTopicsBtn").classList.add("hidden");$("skipHelpTourBtn").textContent="Close help";
 }
 function clearHelpTourTarget(){document.querySelectorAll(".help-tour-target").forEach(element=>element.classList.remove("help-tour-target"));}
 function highlightHelpTourTarget(selector){
   clearHelpTourTarget();const target=selector?document.querySelector(selector):null;if(!target)return;
-  target.classList.add("help-tour-target");target.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});
+  const guide=$("helpTourDialog");guide?.classList.remove("dock-top");target.classList.add("help-tour-target");
+  target.scrollIntoView({behavior:"smooth",block:"start",inline:"nearest"});
+  setTimeout(()=>{const rect=target.getBoundingClientRect();if(rect.bottom>window.innerHeight*.52){guide?.classList.add("dock-top");target.scrollIntoView({behavior:"smooth",block:"end",inline:"nearest"});}},350);
 }
-function openHelpTour(showTopics=false){
-  helpTourStep=0;renderHelpTour();localStorage.setItem(HELP_TOUR_STORAGE_KEY,"true");
+function openHelpTour(startFullWalkthrough=false){
+  helpTourStep=0;renderHelpLanding();localStorage.setItem(HELP_TOUR_STORAGE_KEY,"true");
   document.body.classList.add("help-tour-active");if(!$("helpTourDialog").open)$("helpTourDialog").show();
-  if(showTopics)renderHelpTopics();
+  if(startFullWalkthrough){helpTourMode="tour";renderHelpTour();}
 }
-function closeHelpTour(){clearHelpTourTarget();document.body.classList.remove("help-tour-active");$("helpTourDialog")?.close();}
+function closeHelpTour(){clearHelpTourTarget();document.body.classList.remove("help-tour-active");$("helpTourDialog")?.classList.remove("dock-top");$("helpTourDialog")?.close();}
 
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=56"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=58"));
 }
 
 
@@ -1384,15 +1396,21 @@ function openAccountDialog() {
 
 
 window.addEventListener("DOMContentLoaded", () => {
-  $("helpTourBtn")?.addEventListener("click",()=>openHelpTour(true));
-  $("accountHelpTourBtn")?.addEventListener("click",()=>{$("accountDialog")?.close();openHelpTour(true);});
+  $("helpTourBtn")?.addEventListener("click",()=>openHelpTour(false));
+  $("accountHelpTourBtn")?.addEventListener("click",()=>{$("accountDialog")?.close();openHelpTour();});
+  $("startFullHelpTourBtn")?.addEventListener("click",()=>{helpTourMode="tour";helpTourStep=0;renderHelpTour();});
+  $("browseHelpTopicsBtn")?.addEventListener("click",renderHelpTopics);
   $("helpTourTopicsBtn")?.addEventListener("click",renderHelpTopics);
-  $("helpTourTopics")?.addEventListener("click",event=>{const button=event.target.closest("[data-help-step]");if(button){helpTourStep=Number(button.dataset.helpStep);renderHelpTour();}});
+  $("backToHelpTopicsBtn")?.addEventListener("click",renderHelpTopics);
+  $("helpTourTopics")?.addEventListener("click",event=>{const button=event.target.closest("[data-help-step]");if(button){helpTourMode="topic";helpTourStep=Number(button.dataset.helpStep);renderHelpTour();}});
   $("closeHelpTourBtn")?.addEventListener("click",closeHelpTour);
   $("skipHelpTourBtn")?.addEventListener("click",closeHelpTour);
   $("helpTourBackBtn")?.addEventListener("click",()=>{if(helpTourStep>0){helpTourStep--;renderHelpTour();}});
   $("helpTourNextBtn")?.addEventListener("click",()=>{if(helpTourStep<HELP_TOUR_STEPS.length-1){helpTourStep++;renderHelpTour();}else closeHelpTour();});
-  if(!localStorage.getItem(HELP_TOUR_STORAGE_KEY))setTimeout(()=>{if(!document.querySelector("dialog[open]"))openHelpTour();},1200);
+  if(!localStorage.getItem(HELP_TOUR_STORAGE_KEY)){
+    const startFirstWalkthrough=()=>{if(localStorage.getItem(HELP_TOUR_STORAGE_KEY))return;if(document.querySelector("dialog[open]")){setTimeout(startFirstWalkthrough,1500);return;}openHelpTour(true);};
+    setTimeout(startFirstWalkthrough,1200);
+  }
   const bindPasswordToggle=(checkboxId,inputIds)=>{$(checkboxId)?.addEventListener("change",e=>inputIds.forEach(id=>{const input=$(id);if(input)input.type=e.target.checked?"text":"password";}));};
   bindPasswordToggle("showAuthPassword",["authPassword"]);
   bindPasswordToggle("showResetPasswords",["newPasswordInput","confirmNewPasswordInput"]);
