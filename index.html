@@ -5,18 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=53" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=53" />
-  <link rel="stylesheet" href="styles.css?v=53" />
+  <link rel="manifest" href="manifest.webmanifest?v=55" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=55" />
+  <link rel="stylesheet" href="styles.css?v=55" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=53" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=55" alt="" /><h1>My Usual</h1></div>
       </div>
-      <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
+      <div class="topbar-actions">
+        <button id="helpTourBtn" class="icon-btn help-btn" aria-label="Open instructions">❓ Help</button>
+        <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
+      </div>
     </header>
 
     <main>
@@ -227,6 +230,7 @@
         <div><p id="discoveredType" class="eyebrow">Restaurant</p><h2 id="discoveredName"></h2></div>
         <button id="dismissDiscoveredRestaurantBtn" class="icon-btn" aria-label="Close">×</button>
       </div>
+      <p id="discoveredBusinessStatus" class="business-status-badge hidden"></p>
       <p id="discoveredAddress" class="detail-address"></p>
       <div class="external-actions">
         <a id="viewMenuBtn" class="primary-btn link-btn hidden" target="_blank" rel="noopener">📖 View menu ↗</a>
@@ -368,8 +372,28 @@
         <div id="avatarPicker" class="avatar-picker" role="radiogroup" aria-label="Choose a profile avatar"></div>
       </section>
       <button id="editTasteProfileBtn" class="secondary-btn">Edit taste profile</button>
+      <button id="accountHelpTourBtn" class="secondary-btn">❓ How to use My Usual</button>
       <button id="signOutUserBtn" class="secondary-btn">Sign out</button>
       <button id="closeAccountBtn" class="primary-btn">Done</button>
+    </div>
+  </dialog>
+
+  <dialog id="helpTourDialog" class="help-tour-dialog" aria-labelledby="helpTourTitle">
+    <div class="help-tour-shell">
+      <div class="help-tour-head">
+        <span id="helpTourProgress" class="help-tour-progress"></span>
+        <button id="closeHelpTourBtn" type="button" class="dialog-x help-tour-x" aria-label="Close walkthrough">×</button>
+      </div>
+      <div id="helpTourIcon" class="help-tour-icon" aria-hidden="true"></div>
+      <h2 id="helpTourTitle"></h2>
+      <p id="helpTourText" class="help-tour-text"></p>
+      <div id="helpTourTip" class="help-tour-tip"></div>
+      <div class="help-tour-dots" id="helpTourDots" aria-hidden="true"></div>
+      <div class="help-tour-actions">
+        <button id="helpTourBackBtn" type="button" class="secondary-btn">Back</button>
+        <button id="helpTourNextBtn" type="button" class="primary-btn">Next</button>
+      </div>
+      <button id="skipHelpTourBtn" type="button" class="help-tour-skip">Skip walkthrough</button>
     </div>
   </dialog>
 
@@ -411,6 +435,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=53"></script>
+  <script src="app.js?v=55"></script>
 </body>
 </html>
