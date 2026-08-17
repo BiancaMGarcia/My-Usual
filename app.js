@@ -33,13 +33,27 @@ let currentAvatarId = "avatar-1";
 let helpTourStep = 0;
 const $ = id => document.getElementById(id);
 const HELP_TOUR_STEPS=[
-  {icon:"👋",title:"Welcome to My Usual",text:"My Usual remembers restaurants and orders you enjoy, then helps you decide what to order somewhere new.",tip:"You can reopen this walkthrough anytime by pressing the ? button at the top."},
-  {icon:"👤",title:"Start with your taste profile",text:"Sign in and answer a few quick questions about flavors, cuisines, allergies, and foods you avoid. Your Top Picks use these answers.",tip:"Press the person button at the top to sign in or edit your taste profile."},
-  {icon:"🔎",title:"Find a restaurant",text:"Press Find a New Restaurant, enter a restaurant name, cuisine, or restaurant link, and add a ZIP code. The closest strong matches appear first.",tip:"You can search for something specific like “Pit Stop Boba” or something broad like “sushi.”"},
-  {icon:"✨",title:"Open Top Picks",text:"Choose a restaurant and My Usual will look for its website, menu, and dishes that match your taste profile.",tip:"If a menu cannot be read, paste its menu link into the Menu link box and try again."},
-  {icon:"🔄",title:"Try different picks",text:"If the first recommendations do not sound good, press Find Different Top Picks to search the menu again for other choices.",tip:"The app aims for five verified picks, but may show fewer when the menu has fewer readable matches."},
-  {icon:"💜",title:"Save restaurants and orders",text:"Save useful Top Picks, add your own order, or open a saved restaurant to favorite, rate, copy, edit, or delete an item.",tip:"Use Search My Usuals on the home screen to quickly find anything you already saved."},
-  {icon:"🔗",title:"Keep links up to date",text:"You can edit a saved restaurant and add or replace its website, menu, Google Maps, or item links whenever needed.",tip:"That’s it—you can always press ? if you need this guide again."}
+  {icon:"👋",target:".brand-title-row",title:"Welcome to My Usual",text:"My Usual remembers restaurants and orders you enjoy, then helps you decide what to order somewhere new.",tip:"The glowing outline shows where each feature is on the screen."},
+  {icon:"🔐",target:"#editModeBtn",title:"Sign in or reset a password",text:"Press the highlighted person button. Choose Sign in, then use Forgot password below the password box if needed.",tip:"Password reset links are sent to the account’s email address."},
+  {icon:"👤",target:"#editModeBtn",title:"Create or change your taste profile",text:"Press the highlighted person button, sign in, then choose Edit taste profile. Top Picks use your flavors, cuisines, allergies, and dislikes.",tip:"You can update these answers whenever your preferences change."},
+  {icon:"🐶",target:"#editModeBtn",title:"Change your profile buddy",text:"Press the highlighted person button. In Your Account, choose any profile buddy picture.",tip:"Your selection is saved to your account."},
+  {icon:"🔎",target:"#openDiscoverBtn",title:"Find a restaurant",text:"Press the highlighted Find a New Restaurant button. Then enter a restaurant name, cuisine, or link and your ZIP code.",tip:"Try a specific name like “Pit Stop Boba” or a broad search like “sushi.”"},
+  {icon:"📍",target:"#openDiscoverBtn",title:"Change ZIP code or search distance",text:"Press Find a New Restaurant. Enter the ZIP code you want to search near and move the Search radius slider from 5 to 50 miles.",tip:"A smaller radius keeps results local; a larger radius includes nearby cities."},
+  {icon:"🍣",target:"#categoryChips",title:"Browse saved restaurant categories",text:"Press a category shown here to display only your saved restaurants in that category.",tip:"Choose All whenever you want to see every saved restaurant again."},
+  {icon:"✨",target:"#openDiscoverBtn",title:"Open Top Picks",text:"Start here, select a restaurant from the results, and its Top Picks will appear on the restaurant screen.",tip:"If its menu cannot be read, a Menu link box will appear on that same screen."},
+  {icon:"🔄",target:"#openDiscoverBtn",title:"Try different picks",text:"After Top Picks appear, scroll below them and press Find Different Top Picks to search the menu again.",tip:"The app aims for five verified picks but may show fewer when necessary."},
+  {icon:"💾",target:"#openDiscoverBtn",title:"Save a restaurant or Top Pick",text:"Find and open a restaurant here. On its Top Picks screen, choose the picks you want and press Save Selected Picks or Save All Picks.",tip:"The restaurant and chosen orders will then appear on your home screen."},
+  {icon:"🎲",target:"#searchInput",title:"Let the app choose an order",text:"Find and open a saved restaurant using this box, then press Pick for me above your usual orders.",tip:"This chooses from the orders you have saved at that restaurant."},
+  {icon:"➕",target:"#searchInput",title:"Add an order manually",text:"Find and open a saved restaurant using this box. On the restaurant screen, press Add order and enter the item name.",tip:"Use Find item details to let My Usual search the restaurant’s saved menu link."},
+  {icon:"✏️",target:"#editModeBtn",title:"Add a restaurant manually",text:"Press the person button, sign in, and return home. Press Add beside All restaurants, enter its information, then Save.",tip:"Find restaurant details can fill in its full name, address, website, menu, and Maps link."},
+  {icon:"🔗",target:"#searchInput",title:"Add or edit restaurant links",text:"Find and open the saved restaurant here. Press Edit, then add or replace its website, menu, or Google Maps link.",tip:"A direct menu link gives Top Picks and item search the best chance of finding dishes."},
+  {icon:"⭐",target:"#searchInput",title:"Favorite or rate something",text:"Open a saved restaurant. Press the heart near its name to favorite the restaurant, or press Rate on an order and choose one to five stars.",tip:"Favorites also appear together in the Favorites section on the home screen."},
+  {icon:"📋",target:"#searchInput",title:"Copy an order",text:"Open a saved restaurant and press Copy order on the item you want. The item name and your saved preferences are copied so you can paste them elsewhere.",tip:"This is useful when ordering in another app or sending your order to someone."},
+  {icon:"📝",target:"#searchInput",title:"Edit or delete saved information",text:"Open a saved restaurant. Use Edit or Delete on an order; use Edit mode for restaurant details; or use Delete restaurant at the bottom.",tip:"Delete actions remove saved information, so read the confirmation before continuing."},
+  {icon:"🗺️",target:"#openDiscoverBtn",title:"Open menus, Maps, or Yelp",text:"Find and open a restaurant here. Its restaurant screen shows available Menu, Website, Google Maps, and Yelp buttons above Top Picks.",tip:"These links are checked against the selected restaurant and address."},
+  {icon:"🚫",target:"#openDiscoverBtn",title:"Recognize a closed restaurant",text:"Search results can show Permanently closed or Temporarily closed. Permanently closed locations will not generate Top Picks.",tip:"The app only shows a closure label when its sources explicitly report one."},
+  {icon:"💜",target:"#searchInput",title:"Find saved restaurants and orders",text:"Use the highlighted Search My Usuals box to find anything you have already saved.",tip:"Open a saved restaurant to favorite, rate, copy, edit, or delete an order."},
+  {icon:"❓",target:"#helpTourBtn",title:"Help is always here",text:"Press the highlighted Help button whenever you want these instructions again.",tip:"Opening the guide never changes or deletes your saved information."}
 ];
 const AVATARS=[
   {id:"avatar-1",src:"avatar-husky-blue.png",name:"Happy Husky"},
@@ -1190,17 +1204,29 @@ function renderHelpTour(){
   $("helpTourDots").innerHTML=HELP_TOUR_STEPS.map((_,index)=>`<span class="help-tour-dot${index===helpTourStep?" active":""}"></span>`).join("");
   $("helpTourBackBtn").classList.toggle("hidden",helpTourStep===0);
   $("helpTourNextBtn").textContent=helpTourStep===HELP_TOUR_STEPS.length-1?"Done":"Next";
+  $("helpTourTopics").classList.add("hidden");
+  highlightHelpTourTarget(step.target);
 }
-function openHelpTour(){
+function renderHelpTopics(){
+  clearHelpTourTarget();$("helpTourTopics").innerHTML=HELP_TOUR_STEPS.slice(1).map((step,index)=>`<button type="button" class="help-tour-topic" data-help-step="${index+1}">${step.icon} ${escapeHtml(step.title)}</button>`).join("");
+  $("helpTourTopics").classList.remove("hidden");
+}
+function clearHelpTourTarget(){document.querySelectorAll(".help-tour-target").forEach(element=>element.classList.remove("help-tour-target"));}
+function highlightHelpTourTarget(selector){
+  clearHelpTourTarget();const target=selector?document.querySelector(selector):null;if(!target)return;
+  target.classList.add("help-tour-target");target.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});
+}
+function openHelpTour(showTopics=false){
   helpTourStep=0;renderHelpTour();localStorage.setItem(HELP_TOUR_STORAGE_KEY,"true");
-  if(!$("helpTourDialog").open)$("helpTourDialog").showModal();
+  document.body.classList.add("help-tour-active");if(!$("helpTourDialog").open)$("helpTourDialog").show();
+  if(showTopics)renderHelpTopics();
 }
-function closeHelpTour(){$("helpTourDialog")?.close();}
+function closeHelpTour(){clearHelpTourTarget();document.body.classList.remove("help-tour-active");$("helpTourDialog")?.close();}
 
 init();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=55"));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=56"));
 }
 
 
@@ -1358,8 +1384,10 @@ function openAccountDialog() {
 
 
 window.addEventListener("DOMContentLoaded", () => {
-  $("helpTourBtn")?.addEventListener("click",openHelpTour);
-  $("accountHelpTourBtn")?.addEventListener("click",()=>{$("accountDialog")?.close();openHelpTour();});
+  $("helpTourBtn")?.addEventListener("click",()=>openHelpTour(true));
+  $("accountHelpTourBtn")?.addEventListener("click",()=>{$("accountDialog")?.close();openHelpTour(true);});
+  $("helpTourTopicsBtn")?.addEventListener("click",renderHelpTopics);
+  $("helpTourTopics")?.addEventListener("click",event=>{const button=event.target.closest("[data-help-step]");if(button){helpTourStep=Number(button.dataset.helpStep);renderHelpTour();}});
   $("closeHelpTourBtn")?.addEventListener("click",closeHelpTour);
   $("skipHelpTourBtn")?.addEventListener("click",closeHelpTour);
   $("helpTourBackBtn")?.addEventListener("click",()=>{if(helpTourStep>0){helpTourStep--;renderHelpTour();}});

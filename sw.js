@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v55-help-tour";
-const ASSETS = ["./", "./index.html", "./styles.css?v=55", "./app.js?v=55", "./manifest.webmanifest?v=55", "./icon-192.png?v=55", "./icon-512.png?v=55", "./avatar-husky-blue.png?v=55", "./avatar-brown-peach.png?v=55", "./avatar-samoyed-lavender.png?v=55", "./avatar-white-mint.png?v=55", "./avatar-spitz-pink.png?v=55", "./avatar-shepherd-yellow.png?v=55"];
+const CACHE = "my-usual-v56-spotlight-help";
+const ASSETS = ["./", "./index.html", "./styles.css?v=56", "./app.js?v=56", "./manifest.webmanifest?v=56", "./icon-192.png?v=56", "./icon-512.png?v=56", "./avatar-husky-blue.png?v=56", "./avatar-brown-peach.png?v=56", "./avatar-samoyed-lavender.png?v=56", "./avatar-white-mint.png?v=56", "./avatar-spitz-pink.png?v=56", "./avatar-shepherd-yellow.png?v=56"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
