@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v50-sticky-popup-controls";
-const ASSETS = ["./", "./index.html", "./styles.css?v=50", "./app.js?v=50", "./manifest.webmanifest?v=50", "./icon-192.png?v=50", "./icon-512.png?v=50", "./avatar-husky-blue.png?v=50", "./avatar-brown-peach.png?v=50", "./avatar-samoyed-lavender.png?v=50", "./avatar-white-mint.png?v=50", "./avatar-spitz-pink.png?v=50", "./avatar-shepherd-yellow.png?v=50"];
+const CACHE = "my-usual-v51-alternate-picks-cache";
+const ASSETS = ["./", "./index.html", "./styles.css?v=51", "./app.js?v=51", "./manifest.webmanifest?v=51", "./icon-192.png?v=51", "./icon-512.png?v=51", "./avatar-husky-blue.png?v=51", "./avatar-brown-peach.png?v=51", "./avatar-samoyed-lavender.png?v=51", "./avatar-white-mint.png?v=51", "./avatar-spitz-pink.png?v=51", "./avatar-shepherd-yellow.png?v=51"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
