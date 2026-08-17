@@ -1321,6 +1321,10 @@ function openAccountDialog() {
 
 
 window.addEventListener("DOMContentLoaded", () => {
+  const bindPasswordToggle=(checkboxId,inputIds)=>{$(checkboxId)?.addEventListener("change",e=>inputIds.forEach(id=>{const input=$(id);if(input)input.type=e.target.checked?"text":"password";}));};
+  bindPasswordToggle("showAuthPassword",["authPassword"]);
+  bindPasswordToggle("showResetPasswords",["newPasswordInput","confirmNewPasswordInput"]);
+  bindPasswordToggle("showAdminPassword",["loginPassword"]);
   const oldAccountBtn = $("editModeBtn");
   if (oldAccountBtn) {
     const fresh = oldAccountBtn.cloneNode(true);

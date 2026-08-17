@@ -1,5 +1,5 @@
-const CACHE = "my-usual-v52-password-recovery";
-const ASSETS = ["./", "./index.html", "./styles.css?v=52", "./app.js?v=52", "./manifest.webmanifest?v=52", "./icon-192.png?v=52", "./icon-512.png?v=52", "./avatar-husky-blue.png?v=52", "./avatar-brown-peach.png?v=52", "./avatar-samoyed-lavender.png?v=52", "./avatar-white-mint.png?v=52", "./avatar-spitz-pink.png?v=52", "./avatar-shepherd-yellow.png?v=52"];
+const CACHE = "my-usual-v53-show-password";
+const ASSETS = ["./", "./index.html", "./styles.css?v=53", "./app.js?v=53", "./manifest.webmanifest?v=53", "./icon-192.png?v=53", "./icon-512.png?v=53", "./avatar-husky-blue.png?v=53", "./avatar-brown-peach.png?v=53", "./avatar-samoyed-lavender.png?v=53", "./avatar-white-mint.png?v=53", "./avatar-spitz-pink.png?v=53", "./avatar-shepherd-yellow.png?v=53"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

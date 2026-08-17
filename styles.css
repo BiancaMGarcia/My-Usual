@@ -69,6 +69,7 @@ input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 13p
 textarea { resize: vertical; }
 .check-row { display: flex; align-items: center; gap: 9px; }
 .check-row input { width: auto; }
+.show-password-row{display:flex;align-items:center;gap:9px;font-weight:700;color:var(--muted);cursor:pointer}.show-password-row input{width:auto;accent-color:var(--accent)}
 .muted { color: var(--muted); font-weight: 500; }
 .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
 

@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=52" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=52" />
-  <link rel="stylesheet" href="styles.css?v=52" />
+  <link rel="manifest" href="manifest.webmanifest?v=53" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=53" />
+  <link rel="stylesheet" href="styles.css?v=53" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=52" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=53" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -273,6 +273,7 @@
         Password
         <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required />
       </label>
+      <label class="show-password-row"><input id="showAuthPassword" type="checkbox" /> Show password</label>
 
       <p id="authError" class="error-text hidden"></p>
 
@@ -290,6 +291,7 @@
       <p class="login-help">Enter a new password for your My Usual account.</p>
       <label>New password<input id="newPasswordInput" type="password" autocomplete="new-password" minlength="6" required /></label>
       <label>Confirm new password<input id="confirmNewPasswordInput" type="password" autocomplete="new-password" minlength="6" required /></label>
+      <label class="show-password-row"><input id="showResetPasswords" type="checkbox" /> Show passwords</label>
       <p id="resetPasswordError" class="error-text hidden"></p>
       <button type="submit" class="primary-btn">Update password</button>
     </form>
@@ -388,6 +390,7 @@
       <p class="login-help">Sign in to add or edit restaurants and saved orders.</p>
       <label>Email<input id="loginEmail" type="email" autocomplete="email" required /></label>
       <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <label class="show-password-row"><input id="showAdminPassword" type="checkbox" /> Show password</label>
       <p id="loginError" class="error-text hidden"></p>
       <div class="dialog-actions">
         <button type="button" id="cancelLoginBtn" class="secondary-btn">Cancel</button>
@@ -408,6 +411,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=52"></script>
+  <script src="app.js?v=53"></script>
 </body>
 </html>
