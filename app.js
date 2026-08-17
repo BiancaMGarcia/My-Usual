@@ -1082,10 +1082,11 @@ $("importV1Btn").addEventListener("click", async () => {
   showToast("V1 data imported");
 });
 
-sb.auth.onAuthStateChange(async (_event, session) => {
+sb.auth.onAuthStateChange(async (event, session) => {
   currentUser = session?.user ?? null;
   await refreshAdminStatus();
   render();
+  if(event==="PASSWORD_RECOVERY")setTimeout(()=>{if(!$("resetPasswordDialog").open)$("resetPasswordDialog").showModal();},0);
 });
 
 
@@ -1212,6 +1213,7 @@ function openAuthDialog(mode = "signup") {
   $("authSwitchBtn").textContent = signup
     ? "Already have an account? Sign in"
     : "New here? Create an account";
+  $("forgotPasswordBtn").classList.toggle("hidden",signup);
 
   if (!$("authDialog").open) $("authDialog").showModal();
 }
@@ -1349,6 +1351,25 @@ window.addEventListener("DOMContentLoaded", () => {
 
   $("authSwitchBtn")?.addEventListener("click", () => {
     openAuthDialog(authMode === "signup" ? "signin" : "signup");
+  });
+
+  $("forgotPasswordBtn")?.addEventListener("click",async()=>{
+    const email=$("authEmail").value.trim();const errorBox=$("authError");errorBox.classList.add("hidden");
+    if(!email){errorBox.textContent="Enter your email address first.";errorBox.classList.remove("hidden");$("authEmail").focus();return;}
+    setLoading(true,"Sending your reset link…");
+    const redirectTo=`${window.location.origin}${window.location.pathname}`;
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
+    setLoading(false);
+    if(error){errorBox.textContent=error.message;errorBox.classList.remove("hidden");return;}
+    errorBox.textContent="If an account uses that email, a password-reset link is on its way. Check your inbox and spam folder.";errorBox.classList.remove("hidden");
+  });
+
+  $("resetPasswordForm")?.addEventListener("submit",async e=>{
+    e.preventDefault();const password=$("newPasswordInput").value;const confirmation=$("confirmNewPasswordInput").value;const errorBox=$("resetPasswordError");errorBox.classList.add("hidden");
+    if(password!==confirmation){errorBox.textContent="The passwords do not match.";errorBox.classList.remove("hidden");return;}
+    setLoading(true,"Updating your password…");const {error}=await sb.auth.updateUser({password});setLoading(false);
+    if(error){errorBox.textContent=error.message;errorBox.classList.remove("hidden");return;}
+    $("resetPasswordDialog").close();$("newPasswordInput").value="";$("confirmNewPasswordInput").value="";showToast("Password updated");
   });
 
   $("authCancelBtn")?.addEventListener("click", () => $("authDialog").close());

@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f7eafa" />
   <title>My Usual</title>
-  <link rel="manifest" href="manifest.webmanifest?v=51" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=51" />
-  <link rel="stylesheet" href="styles.css?v=51" />
+  <link rel="manifest" href="manifest.webmanifest?v=52" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=52" />
+  <link rel="stylesheet" href="styles.css?v=52" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">What should I order?</p>
-        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=51" alt="" /><h1>My Usual</h1></div>
+        <div class="brand-title-row"><img class="brand-logo" src="icon-192.png?v=52" alt="" /><h1>My Usual</h1></div>
       </div>
       <button id="editModeBtn" class="icon-btn" aria-label="Account">👤</button>
     </header>
@@ -278,7 +278,20 @@
 
       <button id="authSubmitBtn" type="submit" class="primary-btn">Create account</button>
       <button id="authSwitchBtn" type="button" class="text-btn">Already have an account? Sign in</button>
+      <button id="forgotPasswordBtn" type="button" class="text-btn hidden">Forgot password?</button>
       <button id="authCancelBtn" type="button" class="secondary-btn">Continue as guest</button>
+    </form>
+  </dialog>
+
+  <dialog id="resetPasswordDialog" class="form-dialog">
+    <form id="resetPasswordForm">
+      <button type="button" class="dialog-x" data-close-dialog="resetPasswordDialog" aria-label="Close">×</button>
+      <h2>Choose a new password</h2>
+      <p class="login-help">Enter a new password for your My Usual account.</p>
+      <label>New password<input id="newPasswordInput" type="password" autocomplete="new-password" minlength="6" required /></label>
+      <label>Confirm new password<input id="confirmNewPasswordInput" type="password" autocomplete="new-password" minlength="6" required /></label>
+      <p id="resetPasswordError" class="error-text hidden"></p>
+      <button type="submit" class="primary-btn">Update password</button>
     </form>
   </dialog>
 
@@ -395,6 +408,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=51"></script>
+  <script src="app.js?v=52"></script>
 </body>
 </html>
